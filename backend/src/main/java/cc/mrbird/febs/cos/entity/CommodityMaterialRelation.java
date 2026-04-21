@@ -55,7 +55,7 @@ public class CommodityMaterialRelation implements Serializable {
     /**
      * 创建时间
      */
-    private LocalDateTime createDate;
+    private String createDate;
 
 
 }

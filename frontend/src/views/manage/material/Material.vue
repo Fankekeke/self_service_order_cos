@@ -7,26 +7,18 @@
           <div :class="advanced ? null: 'fold'">
             <a-col :md="6" :sm="24">
               <a-form-item
-                label="餐品编号"
+                label="标题"
                 :labelCol="{span: 5}"
                 :wrapperCol="{span: 18, offset: 1}">
-                <a-input v-model="queryParams.code"/>
+                <a-input v-model="queryParams.title"/>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
               <a-form-item
-                label="餐品名称"
+                label="内容"
                 :labelCol="{span: 5}"
                 :wrapperCol="{span: 18, offset: 1}">
-                <a-input v-model="queryParams.name"/>
-              </a-form-item>
-            </a-col>
-            <a-col :md="6" :sm="24">
-              <a-form-item
-                label="餐品原料"
-                :labelCol="{span: 5}"
-                :wrapperCol="{span: 18, offset: 1}">
-                <a-input v-model="queryParams.model"/>
+                <a-input v-model="queryParams.content"/>
               </a-form-item>
             </a-col>
           </div>
@@ -52,65 +44,66 @@
                :rowSelection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
                :scroll="{ x: 900 }"
                @change="handleTableChange">
+        <template slot="titleShow" slot-scope="text, record">
+          <template>
+            <a-badge status="processing" v-if="record.rackUp === 1"/>
+            <a-badge status="error" v-if="record.rackUp === 0"/>
+            <a-tooltip>
+              <template slot="title">
+                {{ record.title }}
+              </template>
+              {{ record.title.slice(0, 8) }} ...
+            </a-tooltip>
+          </template>
+        </template>
         <template slot="contentShow" slot-scope="text, record">
           <template>
             <a-tooltip>
               <template slot="title">
                 {{ record.content }}
               </template>
-              {{ record.content.slice(0, 10) }} ...
+              {{ record.content.slice(0, 40) }} ...
             </a-tooltip>
           </template>
         </template>
         <template slot="operation" slot-scope="text, record">
           <a-icon type="setting" theme="twoTone" twoToneColor="#4a9ff5" @click="edit(record)" title="修 改"></a-icon>
-          <a-icon type="profile" theme="twoTone" twoToneColor="#4a9ff5" @click="view(record)" title="详 情" style="margin-left: 15px"></a-icon>
         </template>
       </a-table>
     </div>
-    <commodity-add
-      v-if="commodityAdd.visiable"
-      @close="handlecommodityAddClose"
-      @success="handlecommodityAddSuccess"
-      :commodityAddVisiable="commodityAdd.visiable">
-    </commodity-add>
-    <commodity-edit
-      ref="commodityEdit"
-      @close="handlecommodityEditClose"
-      @success="handlecommodityEditSuccess"
-      :commodityEditVisiable="commodityEdit.visiable">
-    </commodity-edit>
-    <commodity-view
-      @close="handlecommodityViewClose"
-      :commodityShow="commodityView.visiable"
-      :commodityData="commodityView.data">
-    </commodity-view>
+    <bulletin-add
+      v-if="bulletinAdd.visiable"
+      @close="handleBulletinAddClose"
+      @success="handleBulletinAddSuccess"
+      :bulletinAddVisiable="bulletinAdd.visiable">
+    </bulletin-add>
+    <bulletin-edit
+      ref="bulletinEdit"
+      @close="handleBulletinEditClose"
+      @success="handleBulletinEditSuccess"
+      :bulletinEditVisiable="bulletinEdit.visiable">
+    </bulletin-edit>
   </a-card>
 </template>
 
 <script>
 import RangeDate from '@/components/datetime/RangeDate'
-import commodityAdd from './CommodityAdd.vue'
-import commodityEdit from './CommodityEdit.vue'
-import commodityView from './CommodityView'
+import BulletinAdd from './MaterialAdd.vue'
+import BulletinEdit from './MaterialEdit.vue'
 import {mapState} from 'vuex'
 import moment from 'moment'
 moment.locale('zh-cn')
 
 export default {
-  name: 'commodity',
-  components: {commodityAdd, commodityEdit, RangeDate, commodityView},
+  name: 'Bulletin',
+  components: {BulletinAdd, BulletinEdit, RangeDate},
   data () {
     return {
       advanced: false,
-      commodityView: {
-        visiable: false,
-        data: null
-      },
-      commodityAdd: {
+      bulletinAdd: {
         visiable: false
       },
-      commodityEdit: {
+      bulletinEdit: {
         visiable: false
       },
       queryParams: {},
@@ -137,39 +130,15 @@ export default {
     }),
     columns () {
       return [{
-        title: '餐品编号',
-        ellipsis: true,
-        dataIndex: 'code'
+        title: '标题',
+        dataIndex: 'title'
       }, {
-        title: '餐品名称',
-        ellipsis: true,
-        dataIndex: 'name'
+        title: '公告内容',
+        dataIndex: 'content',
+        scopedSlots: { customRender: 'contentShow' }
       }, {
-        title: '餐品价格',
-        dataIndex: 'price',
-        ellipsis: true,
-        customRender: (text, row, index) => {
-          if (text !== null) {
-            return text + '元 / 100克'
-          } else {
-            return '- -'
-          }
-        }
-      }, {
-        title: '原料',
-        dataIndex: 'model',
-        ellipsis: true,
-        customRender: (text, row, index) => {
-          if (text !== null) {
-            return text
-          } else {
-            return '- -'
-          }
-        }
-      }, {
-        title: '创建时间',
+        title: '发布时间',
         dataIndex: 'createDate',
-        ellipsis: true,
         customRender: (text, row, index) => {
           if (text !== null) {
             return text
@@ -178,16 +147,27 @@ export default {
           }
         }
       }, {
-        title: '餐品图片',
-        dataIndex: 'images',
-        customRender: (text, record, index) => {
-          if (!record.images) return <a-avatar shape="square" icon="user" />
-          return <a-popover>
-            <template slot="content">
-              <a-avatar shape="square" size={132} icon="user" src={ 'http://127.0.0.1:9527/imagesWeb/' + record.images.split(',')[0] } />
-            </template>
-            <a-avatar shape="square" icon="user" src={ 'http://127.0.0.1:9527/imagesWeb/' + record.images.split(',')[0] } />
-          </a-popover>
+        title: '上下架',
+        dataIndex: 'type',
+        customRender: (text, row, index) => {
+          switch (text) {
+            case 1:
+              return <a-tag>上架</a-tag>
+            case 2:
+              return <a-tag>下架</a-tag>
+            default:
+              return '- -'
+          }
+        }
+      }, {
+        title: '上传人',
+        dataIndex: 'publisher',
+        customRender: (text, row, index) => {
+          if (text !== null) {
+            return text
+          } else {
+            return '- -'
+          }
         }
       }, {
         title: '操作',
@@ -200,13 +180,6 @@ export default {
     this.fetch()
   },
   methods: {
-    view (row) {
-      this.commodityView.data = row
-      this.commodityView.visiable = true
-    },
-    handlecommodityViewClose () {
-      this.commodityView.visiable = false
-    },
     onSelectChange (selectedRowKeys) {
       this.selectedRowKeys = selectedRowKeys
     },
@@ -214,26 +187,26 @@ export default {
       this.advanced = !this.advanced
     },
     add () {
-      this.commodityAdd.visiable = true
+      this.bulletinAdd.visiable = true
     },
-    handlecommodityAddClose () {
-      this.commodityAdd.visiable = false
+    handleBulletinAddClose () {
+      this.bulletinAdd.visiable = false
     },
-    handlecommodityAddSuccess () {
-      this.commodityAdd.visiable = false
-      this.$message.success('新增餐品成功')
+    handleBulletinAddSuccess () {
+      this.bulletinAdd.visiable = false
+      this.$message.success('新增公告成功')
       this.search()
     },
     edit (record) {
-      this.$refs.commodityEdit.setFormValues(record)
-      this.commodityEdit.visiable = true
+      this.$refs.bulletinEdit.setFormValues(record)
+      this.bulletinEdit.visiable = true
     },
-    handlecommodityEditClose () {
-      this.commodityEdit.visiable = false
+    handleBulletinEditClose () {
+      this.bulletinEdit.visiable = false
     },
-    handlecommodityEditSuccess () {
-      this.commodityEdit.visiable = false
-      this.$message.success('修改餐品成功')
+    handleBulletinEditSuccess () {
+      this.bulletinEdit.visiable = false
+      this.$message.success('修改公告成功')
       this.search()
     },
     handleDeptChange (value) {
@@ -251,7 +224,7 @@ export default {
         centered: true,
         onOk () {
           let ids = that.selectedRowKeys.join(',')
-          that.$delete('/cos/commodity-info/' + ids).then(() => {
+          that.$delete('/cos/bulletin-info/' + ids).then(() => {
             that.$message.success('删除成功')
             that.selectedRowKeys = []
             that.search()
@@ -321,7 +294,7 @@ export default {
         params.size = this.pagination.defaultPageSize
         params.current = this.pagination.defaultCurrent
       }
-      this.$get('/cos/commodity-info/page', {
+      this.$get('/cos/bulletin-info/page', {
         ...params
       }).then((r) => {
         let data = r.data.data

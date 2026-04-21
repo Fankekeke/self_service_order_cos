@@ -10,7 +10,7 @@
     </template>
     <a-form :form="form" layout="vertical">
       <a-row :gutter="20">
-        <a-col :span="12">
+        <a-col :span="8">
           <a-form-item label='餐品名称' v-bind="formItemLayout">
             <a-input v-decorator="[
             'name',
@@ -18,31 +18,15 @@
             ]"/>
           </a-form-item>
         </a-col>
-        <a-col :span="12">
-          <a-form-item label='原料' v-bind="formItemLayout">
-            <a-input v-decorator="[
-            'model',
-            { rules: [{ required: true, message: '请输入原料!' }] }
-            ]"/>
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item label='餐品价格' v-bind="formItemLayout">
+        <a-col :span="8">
+          <a-form-item label='餐品价格（元/100g）' v-bind="formItemLayout">
             <a-input-number style="width: 100%" :min="0.1" v-decorator="[
             'price',
             { rules: [{ required: true, message: '请输入餐品价格!' }] }
             ]"/>
           </a-form-item>
         </a-col>
-         <a-col :span="12">
-          <a-form-item label='当前库存' v-bind="formItemLayout">
-            <a-input-number style="width: 100%" :min="1" v-decorator="[
-            'stockNum',
-            { rules: [{ required: true, message: '请输入当前库存!' }] }
-            ]"/>
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
+        <a-col :span="8">
           <a-form-item label='餐品类型' v-bind="formItemLayout">
             <a-select
               style="width: 100%"
@@ -51,7 +35,7 @@
             </a-select>
           </a-form-item>
         </a-col>
-        <a-col :span="12">
+        <a-col :span="8">
           <a-form-item label='餐品状态' v-bind="formItemLayout">
             <a-radio-group default-value="1" button-style="solid"
               v-decorator="[
@@ -68,6 +52,86 @@
             <a-textarea :rows="6" v-decorator="[
             'content',
              { rules: [{ required: true, message: '请输入餐品备注!' }] }
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+        <a-form-item label='热量（千卡）' v-bind="formItemLayout">
+          <a-input-number style="width: 100%" :min="0" v-decorator="[
+            'calories',
+            { rules: [{ required: false, message: '请输入热量!' }] }
+            ]"/>
+        </a-form-item>
+      </a-col>
+        <a-col :span="8">
+          <a-form-item label='蛋白质含量（克/100g）' v-bind="formItemLayout">
+            <a-input-number style="width: 100%" :min="0" :step="0.1" v-decorator="[
+            'protein',
+            { rules: [{ required: false, message: '请输入蛋白质含量!' }] }
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label='脂肪含量（克/100g）' v-bind="formItemLayout">
+            <a-input-number style="width: 100%" :min="0" :step="0.1" v-decorator="[
+            'fat',
+            { rules: [{ required: false, message: '请输入脂肪含量!' }] }
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label='碳水化合物含量（克/100g）' v-bind="formItemLayout">
+            <a-input-number style="width: 100%" :min="0" :step="0.1" v-decorator="[
+            'carbohydrate',
+            { rules: [{ required: false, message: '请输入碳水化合物含量!' }] }
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label='钠含量（毫克/100g）' v-bind="formItemLayout">
+            <a-input-number style="width: 100%" :min="0" :step="0.1" v-decorator="[
+            'sodium',
+            { rules: [{ required: false, message: '请输入钠含量!' }] }
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label='膳食纤维含量（克/100g）' v-bind="formItemLayout">
+            <a-input-number style="width: 100%" :min="0" :step="0.1" v-decorator="[
+            'fiber',
+            { rules: [{ required: false, message: '请输入膳食纤维含量!' }] }
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="8">
+          <a-form-item label='糖含量（克/100g）' v-bind="formItemLayout">
+            <a-input-number style="width: 100%" :min="0" :step="0.1" v-decorator="[
+            'sugar',
+            { rules: [{ required: false, message: '请输入糖含量!' }] }
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="16">
+          <a-form-item label='份量说明' v-bind="formItemLayout">
+            <a-input v-decorator="[
+            'servingSize',
+            { rules: [{ required: false, message: '请输入份量说明!' }] }
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="24">
+          <a-form-item label='过敏原信息' v-bind="formItemLayout">
+            <a-textarea :rows="3" v-decorator="[
+            'allergenInfo',
+            { rules: [{ required: false, message: '请输入过敏原信息!' }] }
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="24">
+          <a-form-item label='营养备注' v-bind="formItemLayout">
+            <a-textarea :rows="3" v-decorator="[
+            'nutritionRemark',
+            { rules: [{ required: false, message: '请输入营养备注!' }] }
             ]"/>
           </a-form-item>
         </a-col>

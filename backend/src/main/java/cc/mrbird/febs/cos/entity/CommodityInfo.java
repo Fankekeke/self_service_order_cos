@@ -84,4 +84,54 @@ public class CommodityInfo implements Serializable {
      * 餐品状态（0.下架 1.上架）
      */
     private String onPut;
+
+    /**
+     * 热量（千卡）
+     */
+    private BigDecimal calories;
+
+    /**
+     * 蛋白质含量（克/100g）
+     */
+    private BigDecimal protein;
+
+    /**
+     * 脂肪含量（克/100g）
+     */
+    private BigDecimal fat;
+
+    /**
+     * 碳水化合物含量（克/100g）
+     */
+    private BigDecimal carbohydrate;
+
+    /**
+     * 钠含量（毫克/100g）
+     */
+    private BigDecimal sodium;
+
+    /**
+     * 膳食纤维含量（克/100g）
+     */
+    private BigDecimal fiber;
+
+    /**
+     * 糖含量（克/100g）
+     */
+    private BigDecimal sugar;
+
+    /**
+     * 份量说明
+     */
+    private String servingSize;
+
+    /**
+     * 过敏原信息
+     */
+    private String allergenInfo;
+
+    /**
+     * 营养备注
+     */
+    private String nutritionRemark;
 }

@@ -32,7 +32,7 @@ public class DailySupplyPlanDetailController {
      */
     @GetMapping("/page")
     public R page(Page<DailySupplyPlanDetail> page, DailySupplyPlanDetail dailySupplyPlanDetail) {
-        return R.ok();
+        return R.ok(dailySupplyPlanDetailService.queryPage(page, dailySupplyPlanDetail));
     }
 
     /**

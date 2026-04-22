@@ -1,10 +1,14 @@
 package cc.mrbird.febs.cos.controller;
 
 
+import cc.mrbird.febs.common.exception.FebsException;
 import cc.mrbird.febs.common.utils.R;
+import cc.mrbird.febs.cos.entity.CommodityInfo;
 import cc.mrbird.febs.cos.entity.CommodityMaterialRelation;
 import cc.mrbird.febs.cos.service.ICommodityMaterialRelationService;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +36,9 @@ public class CommodityMaterialRelationController {
      */
     @GetMapping("/page")
     public R page(Page<CommodityMaterialRelation> page, CommodityMaterialRelation commodityMaterialRelation) {
-        return R.ok();
+        return R.ok(commodityMaterialRelationService.queryPage(page, commodityMaterialRelation));
     }
+
 
     /**
      * 获取ID获取菜品原材料关联详情
@@ -63,9 +68,28 @@ public class CommodityMaterialRelationController {
      * @return 结果
      */
     @PostMapping
-    public R save(CommodityMaterialRelation commodityMaterialRelation) {
-        commodityMaterialRelation.setCreateDate(DateUtil.formatDateTime(new Date()));
-        return R.ok(commodityMaterialRelationService.save(commodityMaterialRelation));
+    public R save(CommodityMaterialRelation commodityMaterialRelation) throws FebsException {
+        List<CommodityMaterialRelation> commodityMaterialRelationList = JSONUtil.toList(commodityMaterialRelation.getRelationListStr(), CommodityMaterialRelation.class);
+
+        if (commodityMaterialRelationList == null || commodityMaterialRelationList.isEmpty()) {
+            throw new FebsException("关联信息不能为空");
+        }
+
+        Integer commodityId = commodityMaterialRelation.getCommodityId();
+
+        int exists = commodityMaterialRelationService.count(Wrappers.<CommodityMaterialRelation>lambdaQuery().eq(CommodityMaterialRelation::getCommodityId, commodityId));
+
+        if (exists > 0) {
+            throw new FebsException("该菜品已绑定原材料，请勿重复添加");
+        }
+
+        String createDate = DateUtil.formatDateTime(new Date());
+        for (CommodityMaterialRelation relation : commodityMaterialRelationList) {
+            relation.setCommodityId(commodityId);
+            relation.setCreateDate(createDate);
+        }
+
+        return R.ok(commodityMaterialRelationService.saveBatch(commodityMaterialRelationList));
     }
 
     /**
@@ -75,8 +99,22 @@ public class CommodityMaterialRelationController {
      * @return 结果
      */
     @PutMapping
-    public R edit(CommodityMaterialRelation commodityMaterialRelation) {
-        return R.ok(commodityMaterialRelationService.updateById(commodityMaterialRelation));
+    public R edit(CommodityMaterialRelation commodityMaterialRelation) throws FebsException {
+        Integer commodityId = commodityMaterialRelation.getCommodityId();
+        commodityMaterialRelationService.remove(Wrappers.<CommodityMaterialRelation>lambdaQuery().eq(CommodityMaterialRelation::getCommodityId, commodityId));
+        List<CommodityMaterialRelation> commodityMaterialRelationList = JSONUtil.toList(commodityMaterialRelation.getRelationListStr(), CommodityMaterialRelation.class);
+
+        if (commodityMaterialRelationList == null || commodityMaterialRelationList.isEmpty()) {
+            throw new FebsException("关联信息不能为空");
+        }
+
+        String createDate = DateUtil.formatDateTime(new Date());
+        for (CommodityMaterialRelation relation : commodityMaterialRelationList) {
+            relation.setCommodityId(commodityId);
+            relation.setCreateDate(createDate);
+        }
+
+        return R.ok(commodityMaterialRelationService.saveBatch(commodityMaterialRelationList));
     }
 
     /**

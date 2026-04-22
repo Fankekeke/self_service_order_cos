@@ -1,10 +1,14 @@
 package cc.mrbird.febs.cos.entity;
 
 import java.math.BigDecimal;
+
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+
 import java.time.LocalDateTime;
 import java.io.Serializable;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -24,7 +28,7 @@ public class CommodityMaterialRelation implements Serializable {
     /**
      * 主键ID
      */
-            @TableId(value = "ID", type = IdType.AUTO)
+    @TableId(value = "ID", type = IdType.AUTO)
     private Integer id;
 
     /**
@@ -57,5 +61,6 @@ public class CommodityMaterialRelation implements Serializable {
      */
     private String createDate;
 
-
+    @TableField(exist = false)
+    private String relationListStr;
 }

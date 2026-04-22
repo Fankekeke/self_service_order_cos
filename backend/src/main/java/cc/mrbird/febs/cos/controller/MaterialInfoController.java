@@ -32,7 +32,7 @@ public class MaterialInfoController {
      */
     @GetMapping("/page")
     public R page(Page<MaterialInfo> page, MaterialInfo materialInfo) {
-        return R.ok();
+        return R.ok(materialInfoService.queryPage(page, materialInfo));
     }
 
     /**
@@ -64,6 +64,7 @@ public class MaterialInfoController {
      */
     @PostMapping
     public R save(MaterialInfo materialInfo) {
+        materialInfo.setCode("MAR-" + System.currentTimeMillis());
         materialInfo.setCreateDate(DateUtil.formatDateTime(new Date()));
         return R.ok(materialInfoService.save(materialInfo));
     }

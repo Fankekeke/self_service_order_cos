@@ -3,6 +3,7 @@ package cc.mrbird.febs.cos.entity;
 import java.math.BigDecimal;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 
 import java.time.LocalDateTime;
@@ -95,5 +96,8 @@ public class DailySupplyPlanDetail implements Serializable {
      */
     private String updateDate;
 
+    @TableField(exist = false)
+    private String dailyPlanStr;
 
+    private String date;
 }

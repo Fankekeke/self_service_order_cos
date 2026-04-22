@@ -1,10 +1,12 @@
 package cc.mrbird.febs.cos.controller;
 
 
+import cc.mrbird.febs.common.exception.FebsException;
 import cc.mrbird.febs.common.utils.R;
 import cc.mrbird.febs.cos.entity.DailySupplyPlanDetail;
 import cc.mrbird.febs.cos.service.IDailySupplyPlanDetailService;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,9 +65,28 @@ public class DailySupplyPlanDetailController {
      * @return 结果
      */
     @PostMapping
-    public R save(DailySupplyPlanDetail dailySupplyPlanDetail) {
-        dailySupplyPlanDetail.setCreateDate(DateUtil.formatDateTime(new Date()));
-        return R.ok(dailySupplyPlanDetailService.save(dailySupplyPlanDetail));
+    public R save(DailySupplyPlanDetail dailySupplyPlanDetail) throws FebsException {
+        if (dailySupplyPlanDetail.getDate() == null || dailySupplyPlanDetail.getDate().trim().isEmpty()) {
+            throw new FebsException("供应日期不能为空");
+        }
+
+        if (dailySupplyPlanDetail.getDailyPlanStr() == null || dailySupplyPlanDetail.getDailyPlanStr().trim().isEmpty()) {
+            throw new FebsException("供应计划数据不能为空");
+        }
+
+        boolean exists = dailySupplyPlanDetailService.existsByDate(dailySupplyPlanDetail.getDate());
+        if (exists) {
+            throw new FebsException("该日期的供应计划已存在，请勿重复添加");
+        }
+
+        List<DailySupplyPlanDetail> list = JSONUtil.toList(dailySupplyPlanDetail.getDailyPlanStr(), DailySupplyPlanDetail.class);
+
+        if (list == null || list.isEmpty()) {
+            throw new FebsException("供应计划列表不能为空");
+        }
+
+        boolean result = dailySupplyPlanDetailService.batchSave(list, dailySupplyPlanDetail.getDate());
+        return R.ok(result);
     }
 
     /**

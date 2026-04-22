@@ -5,18 +5,7 @@
     <!-- 分页查询餐品信息 -->
     <select id="getCommodityByPage" resultType="java.util.LinkedHashMap">
         SELECT
-        ci.id,
-        ci.code,
-        ci.name,
-        ci.type,
-        ci.stock_num,
-        ci.price,
-        ci.images,
-        ci.model,
-        ci.content,
-        ci.create_date AS createDate,
-        ci.shop_id AS shopId,
-        ci.on_put AS onPut,
+        ci.*,
         si.introduction,
         si.name as shopName,
         si.tag,

@@ -49,11 +49,64 @@
         </a-col>
       </a-row>
       <br/>
+      <a-row style="padding-left: 24px;padding-right: 24px;">
+        <a-col :span="8"><b>标签：</b>
+          <a-tag v-for="(tagItem, index) in tagList" :key="index" color="blue">{{ tagItem }}</a-tag>
+        </a-col>
+        <a-col :span="8"><b>食用份量：</b>
+          {{ commodityData.servingSize || '- -' }}
+        </a-col>
+        <a-col :span="8"><b>过敏原：</b>
+          {{ commodityData.allergenInfo || '无' }}
+        </a-col>
+      </a-row>
+      <br/>
+      <br/>
+      <a-row style="padding-left: 24px;padding-right: 24px;">
+        <a-col style="margin-bottom: 15px"><span style="font-size: 15px;font-weight: 650;color: #000c17">营养成分</span></a-col>
+        <a-col :span="8"><b>热量：</b>
+          {{ commodityData.calories ? commodityData.calories + ' kcal' : '- -' }}
+        </a-col>
+        <a-col :span="8"><b>蛋白质：</b>
+          {{ commodityData.protein ? commodityData.protein + ' g' : '- -' }}
+        </a-col>
+        <a-col :span="8"><b>脂肪：</b>
+          {{ commodityData.fat ? commodityData.fat + ' g' : '- -' }}
+        </a-col>
+      </a-row>
+      <br/>
+      <a-row style="padding-left: 24px;padding-right: 24px;">
+        <a-col :span="8"><b>碳水化合物：</b>
+          {{ commodityData.carbohydrate ? commodityData.carbohydrate + ' g' : '- -' }}
+        </a-col>
+        <a-col :span="8"><b>钠：</b>
+          {{ commodityData.sodium ? commodityData.sodium + ' mg' : '- -' }}
+        </a-col>
+        <a-col :span="8"><b>膳食纤维：</b>
+          {{ commodityData.fiber ? commodityData.fiber + ' g' : '- -' }}
+        </a-col>
+      </a-row>
+      <br/>
+      <a-row style="padding-left: 24px;padding-right: 24px;">
+        <a-col :span="8"><b>糖：</b>
+          {{ commodityData.sugar ? commodityData.sugar + ' g' : '- -' }}
+        </a-col>
+        <a-col :span="16"><b>营养备注：</b>
+          {{ commodityData.nutritionRemark || '- -' }}
+        </a-col>
+      </a-row>
+      <br/>
       <br/>
       <a-row style="padding-left: 24px;padding-right: 24px;">
         <a-col style="margin-bottom: 15px"><span style="font-size: 15px;font-weight: 650;color: #000c17">餐品介绍</span></a-col>
         <a-col :span="24">
           {{ commodityData.content !== null ? commodityData.content : '- -' }}
+        </a-col>
+        <br/>
+        <br/>
+        <a-col style="margin-bottom: 15px"><span style="font-size: 15px;font-weight: 650;color: #000c17">详细介绍</span></a-col>
+        <a-col :span="24">
+          {{ commodityData.introduction !== null ? commodityData.introduction : '- -' }}
         </a-col>
         <br/>
         <br/>
@@ -68,12 +121,7 @@
             @preview="handlePreview"
             @change="picHandleChange"
           >
-<!--            <div v-if="fileList.length < 8">-->
-<!--              <a-icon type="plus" />-->
-<!--              <div class="ant-upload-text">-->
-<!--                Upload-->
-<!--              </div>-->
-<!--            </div>-->
+
           </a-upload>
           <a-modal :visible="previewVisible" :footer="null" @cancel="handleCancel">
             <img alt="example" style="width: 100%" :src="previewImage" />
@@ -150,7 +198,8 @@ export default {
       fileList: [],
       previewVisible: false,
       previewImage: '',
-      replyList: []
+      replyList: [],
+      tagList: []
     }
   },
   watch: {

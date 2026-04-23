@@ -7,18 +7,18 @@
           <div :class="advanced ? null: 'fold'">
             <a-col :md="6" :sm="24">
               <a-form-item
-                label="标题"
+                label="原材料名称"
                 :labelCol="{span: 5}"
                 :wrapperCol="{span: 18, offset: 1}">
-                <a-input v-model="queryParams.title"/>
+                <a-input v-model="queryParams.name"/>
               </a-form-item>
             </a-col>
             <a-col :md="6" :sm="24">
               <a-form-item
-                label="内容"
+                label="分类"
                 :labelCol="{span: 5}"
                 :wrapperCol="{span: 18, offset: 1}">
-                <a-input v-model="queryParams.content"/>
+                <a-input v-model="queryParams.category"/>
               </a-form-item>
             </a-col>
           </div>
@@ -130,38 +130,56 @@ export default {
     }),
     columns () {
       return [{
-        title: '标题',
-        dataIndex: 'title'
+        title: '原材料名称',
+        dataIndex: 'name',
+        ellipsis: true,
+        scopedSlots: { customRender: 'nameShow' }
       }, {
-        title: '公告内容',
-        dataIndex: 'content',
-        scopedSlots: { customRender: 'contentShow' }
+        title: '分类',
+        dataIndex: 'category',
+        ellipsis: true
       }, {
-        title: '发布时间',
-        dataIndex: 'createDate',
+        title: '单位',
+        dataIndex: 'unit',
+        ellipsis: true
+      }, {
+        title: '规格型号',
+        dataIndex: 'specification',
+        ellipsis: true
+      }, {
+        title: '供应商',
+        dataIndex: 'supplier',
+        ellipsis: true
+      }, {
+        title: '单价(元)',
+        dataIndex: 'unitPrice',
+        ellipsis: true,
         customRender: (text, row, index) => {
-          if (text !== null) {
-            return text
+          if (text !== null && text !== undefined) {
+            return '¥' + parseFloat(text).toFixed(2)
           } else {
             return '- -'
           }
         }
       }, {
-        title: '上下架',
-        dataIndex: 'type',
+        title: '保质期(天)',
+        dataIndex: 'shelfLife',
+        ellipsis: true,
         customRender: (text, row, index) => {
-          switch (text) {
-            case 1:
-              return <a-tag>上架</a-tag>
-            case 2:
-              return <a-tag>下架</a-tag>
-            default:
-              return '- -'
+          if (text !== null && text !== undefined) {
+            return text + '天'
+          } else {
+            return '- -'
           }
         }
       }, {
-        title: '上传人',
-        dataIndex: 'publisher',
+        title: '储存条件',
+        dataIndex: 'storageCondition',
+        ellipsis: true
+      }, {
+        title: '创建时间',
+        dataIndex: 'createDate',
+        ellipsis: true,
         customRender: (text, row, index) => {
           if (text !== null) {
             return text
@@ -194,7 +212,7 @@ export default {
     },
     handleBulletinAddSuccess () {
       this.bulletinAdd.visiable = false
-      this.$message.success('新增公告成功')
+      this.$message.success('新增原材料成功')
       this.search()
     },
     edit (record) {
@@ -206,7 +224,7 @@ export default {
     },
     handleBulletinEditSuccess () {
       this.bulletinEdit.visiable = false
-      this.$message.success('修改公告成功')
+      this.$message.success('修改原材料成功')
       this.search()
     },
     handleDeptChange (value) {
@@ -224,7 +242,7 @@ export default {
         centered: true,
         onOk () {
           let ids = that.selectedRowKeys.join(',')
-          that.$delete('/cos/bulletin-info/' + ids).then(() => {
+          that.$delete('/cos/material-info/' + ids).then(() => {
             that.$message.success('删除成功')
             that.selectedRowKeys = []
             that.search()
@@ -294,7 +312,7 @@ export default {
         params.size = this.pagination.defaultPageSize
         params.current = this.pagination.defaultCurrent
       }
-      this.$get('/cos/bulletin-info/page', {
+      this.$get('/cos/material-info/page', {
         ...params
       }).then((r) => {
         let data = r.data.data

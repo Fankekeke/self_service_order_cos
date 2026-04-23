@@ -2,4 +2,33 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cc.mrbird.febs.cos.dao.MaterialInfoMapper">
 
+    <!-- 分页获取原材料 -->
+    <select id="queryPage" resultType="java.util.LinkedHashMap">
+        SELECT
+        id,
+        CODE,
+        NAME,
+        category,
+        unit,
+        specification,
+        supplier,
+        unit_price,
+        shelf_life,
+        storage_condition,
+        description,
+        images,
+        create_date
+        FROM
+        material_info
+        WHERE
+        1 = 1
+        <if test="materialInfo.name != null and materialInfo.name != ''">
+            AND name LIKE CONCAT('%',#{materialInfo.name},'%')
+        </if>
+        <if test="materialInfo.category != null and materialInfo.category != ''">
+            AND category LIKE CONCAT('%',#{materialInfo.category},'%')
+        </if>
+        ORDER BY
+        create_date DESC
+    </select>
 </mapper>

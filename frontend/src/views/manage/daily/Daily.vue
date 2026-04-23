@@ -133,7 +133,7 @@ export default {
         title: '标题',
         dataIndex: 'title'
       }, {
-        title: '公告内容',
+        title: '供应计划内容',
         dataIndex: 'content',
         scopedSlots: { customRender: 'contentShow' }
       }, {
@@ -194,7 +194,7 @@ export default {
     },
     handleBulletinAddSuccess () {
       this.bulletinAdd.visiable = false
-      this.$message.success('新增公告成功')
+      this.$message.success('新增供应计划成功')
       this.search()
     },
     edit (record) {
@@ -206,7 +206,7 @@ export default {
     },
     handleBulletinEditSuccess () {
       this.bulletinEdit.visiable = false
-      this.$message.success('修改公告成功')
+      this.$message.success('修改供应计划成功')
       this.search()
     },
     handleDeptChange (value) {

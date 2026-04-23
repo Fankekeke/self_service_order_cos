@@ -1,5 +1,5 @@
 <template>
-  <a-modal v-model="show" title="修改公告" @cancel="onClose" :width="800">
+  <a-modal v-model="show" title="修改原材料" @cancel="onClose" :width="800">
     <template slot="footer">
       <a-button key="back" @click="onClose">
         取消
@@ -9,44 +9,97 @@
       </a-button>
     </template>
     <a-form :form="form" layout="vertical">
+
       <a-row :gutter="20">
         <a-col :span="12">
-          <a-form-item label='公告标题' v-bind="formItemLayout">
+          <a-form-item label='原材料名称' v-bind="formItemLayout">
             <a-input v-decorator="[
-            'title',
-            { rules: [{ required: true, message: '请输入名称!' }] }
+            'name',
+            { rules: [{ required: true, message: '请输入原材料名称!' }] }
             ]"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item label='上传人' v-bind="formItemLayout">
-            <a-input v-decorator="[
-            'publisher',
-            { rules: [{ required: true, message: '请输入上传人!' }] }
-            ]"/>
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item label='公告状态' v-bind="formItemLayout">
+          <a-form-item label='原材料分类' v-bind="formItemLayout">
             <a-select v-decorator="[
-              'rackUp',
-              { rules: [{ required: true, message: '请输入公告状态!' }] }
-              ]">
-              <a-select-option value="0">下架</a-select-option>
-              <a-select-option value="1">已发布</a-select-option>
+            'category',
+            { rules: [{ required: true, message: '请选择原材料分类!' }] }
+            ]" placeholder="请选择原材料分类">
+              <a-select-option value="蔬菜类">蔬菜类</a-select-option>
+              <a-select-option value="肉类">肉类</a-select-option>
+              <a-select-option value="海鲜类">海鲜类</a-select-option>
+              <a-select-option value="水果类">水果类</a-select-option>
+              <a-select-option value="粮油类">粮油类</a-select-option>
+              <a-select-option value="调味品类">调味品类</a-select-option>
+              <a-select-option value="饮品类">饮品类</a-select-option>
+              <a-select-option value="乳制品">乳制品</a-select-option>
+              <a-select-option value="蛋类">蛋类</a-select-option>
+              <a-select-option value="其他">其他</a-select-option>
             </a-select>
           </a-form-item>
         </a-col>
-        <a-col :span="24">
-          <a-form-item label='公告内容' v-bind="formItemLayout">
-            <a-textarea :rows="6" v-decorator="[
-            'content',
-             { rules: [{ required: true, message: '请输入名称!' }] }
+        <a-col :span="12">
+          <a-form-item label='单位' v-bind="formItemLayout">
+            <a-input v-decorator="[
+            'unit',
+            { rules: [{ required: true, message: '请输入单位!' }] }
+            ]" placeholder="如：kg、g、L、ml等"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item label='规格型号' v-bind="formItemLayout">
+            <a-input v-decorator="[
+            'specification'
             ]"/>
           </a-form-item>
         </a-col>
+        <a-col :span="12">
+          <a-form-item label='供应商' v-bind="formItemLayout">
+            <a-input v-decorator="[
+            'supplier'
+            ]"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item label='单价' v-bind="formItemLayout">
+            <a-input-number
+              v-decorator="[
+              'unitPrice',
+              { rules: [{ required: true, message: '请输入单价!' }] }
+              ]"
+              :min="0"
+              :precision="2"              style="width: 100%"
+              placeholder="请输入单价"
+            />
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item label='保质期(天)' v-bind="formItemLayout">
+            <a-input-number
+              v-decorator="[
+              'shelfLife'
+              ]"
+              :min="0"              style="width: 100%"
+              placeholder="请输入保质期天数"
+            />
+          </a-form-item>
+        </a-col>
+        <a-col :span="12">
+          <a-form-item label='储存条件' v-bind="formItemLayout">
+            <a-input v-decorator="[
+            'storageCondition'
+            ]" placeholder="如：常温、冷藏、冷冻等"/>
+          </a-form-item>
+        </a-col>
         <a-col :span="24">
-          <a-form-item label='图册' v-bind="formItemLayout">
+          <a-form-item label='详细描述' v-bind="formItemLayout">
+            <a-textarea :rows="6" v-decorator="[
+            'description'
+            ]" placeholder="请输入原材料详细描述"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="24">
+          <a-form-item label='图片' v-bind="formItemLayout">
             <a-upload
               name="avatar"
               action="http://127.0.0.1:9527/file/fileUpload/"
@@ -68,6 +121,7 @@
           </a-form-item>
         </a-col>
       </a-row>
+
     </a-form>
   </a-modal>
 </template>
@@ -141,7 +195,7 @@ export default {
     },
     setFormValues ({...bulletin}) {
       this.rowId = bulletin.id
-      let fields = ['title', 'content', 'publisher', 'rackUp', 'type']
+      let fields = ['name', 'category', 'unit', 'specification', 'supplier', 'unitPrice', 'shelfLife', 'storageCondition', 'description']
       let obj = {}
       Object.keys(bulletin).forEach((key) => {
         if (key === 'images') {
@@ -181,7 +235,7 @@ export default {
         values.images = images.length > 0 ? images.join(',') : null
         if (!err) {
           this.loading = true
-          this.$put('/cos/bulletin-info', {
+          this.$put('/cos/material-info', {
             ...values
           }).then((r) => {
             this.reset()

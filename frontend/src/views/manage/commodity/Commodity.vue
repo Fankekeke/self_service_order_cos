@@ -65,6 +65,7 @@
         <template slot="operation" slot-scope="text, record">
           <a-icon type="setting" theme="twoTone" twoToneColor="#4a9ff5" @click="edit(record)" title="修 改"></a-icon>
           <a-icon type="profile" theme="twoTone" twoToneColor="#4a9ff5" @click="view(record)" title="详 情" style="margin-left: 15px"></a-icon>
+          <a-icon type="link" @click="openMaterialRelation(record)" title="原材料关联" style="margin-left: 15px"></a-icon>
         </template>
       </a-table>
     </div>
@@ -85,6 +86,68 @@
       :commodityShow="commodityView.visiable"
       :commodityData="commodityView.data">
     </commodity-view>
+
+    <a-modal
+      v-model="materialRelationModal.visible"
+      title="原材料关联管理"
+      @ok="handleMaterialRelationSubmit"
+      @cancel="handleMaterialRelationClose"
+      :width="1000"
+      :confirmLoading="materialRelationModal.loading">
+      <div class="material-relation-container">
+        <a-button type="primary" @click="addMaterialRow" style="margin-bottom: 16px">
+          <a-icon type="plus" /> 添加原材料
+        </a-button>
+        <a-table
+          :columns="materialColumns"
+          :dataSource="materialRelationModal.relationList"
+          :pagination="false"
+          :rowKey="(record, index) => index"
+          size="small">
+          <template slot="materialIdSelect" slot-scope="text, record, index">
+            <a-select
+              v-model="record.materialId"
+              placeholder="请选择原材料"
+              style="width: 100%"
+              show-search
+              :filter-option="filterMaterialOption"
+              @change="(value) => handleMaterialChange(value, index)">
+              <a-select-option
+                v-for="material in materialList"
+                :key="material.id"
+                :value="material.id">
+                {{ material.name }} ({{ material.category }})
+              </a-select-option>
+            </a-select>
+          </template>
+          <template slot="quantityInput" slot-scope="text, record, index">
+            <a-input-number
+              v-model="record.quantity"
+              :min="0"
+              :precision="2"              style="width: 100%"
+              placeholder="数量" />
+          </template>
+          <template slot="unitInput" slot-scope="text, record, index">
+            <a-input
+              v-model="record.unit"
+              placeholder="单位" />
+          </template>
+          <template slot="remarkInput" slot-scope="text, record, index">
+            <a-input
+              v-model="record.remark"
+              placeholder="备注" />
+          </template>
+          <template slot="action" slot-scope="text, record, index">
+            <a-icon
+              type="delete"
+              theme="twoTone"
+              twoToneColor="#ff4d4f"
+              @click="removeMaterialRow(index)"
+              title="删除" />
+          </template>
+        </a-table>
+      </div>
+    </a-modal>
   </a-card>
 </template>
 
@@ -113,6 +176,13 @@ export default {
       commodityEdit: {
         visiable: false
       },
+      materialRelationModal: {
+        visible: false,
+        loading: false,
+        commodityId: null,
+        relationList: []
+      },
+      materialList: [],
       queryParams: {},
       filteredInfo: null,
       sortedInfo: null,
@@ -194,12 +264,120 @@ export default {
         dataIndex: 'operation',
         scopedSlots: {customRender: 'operation'}
       }]
+    },
+    materialColumns () {
+      return [{
+        title: '原材料',
+        dataIndex: 'materialId',
+        width: 250,
+        scopedSlots: { customRender: 'materialIdSelect' }
+      }, {
+        title: '数量',
+        dataIndex: 'quantity',
+        width: 150,
+        scopedSlots: { customRender: 'quantityInput' }
+      }, {
+        title: '单位',
+        dataIndex: 'unit',
+        width: 120,
+        scopedSlots: { customRender: 'unitInput' }
+      }, {
+        title: '备注',
+        dataIndex: 'remark',
+        scopedSlots: { customRender: 'remarkInput' }
+      }, {
+        title: '操作',
+        dataIndex: 'action',
+        width: 80,
+        scopedSlots: { customRender: 'action' }
+      }]
     }
   },
   mounted () {
     this.fetch()
+    this.loadMaterialList()
   },
   methods: {
+    loadMaterialList () {
+      this.$get('/cos/material-info/list').then((r) => {
+        this.materialList = r.data.data || []
+      })
+    },
+    openMaterialRelation (record) {
+      this.materialRelationModal.commodityId = record.id
+      this.materialRelationModal.visible = true
+      this.materialRelationModal.relationList = []
+
+      // 如果已有关系数据，加载它
+      if (record.relationListStr) {
+        try {
+          this.materialRelationModal.relationList = JSON.parse(record.relationListStr)
+        } catch (e) {
+          console.error('解析原材料关系数据失败', e)
+          this.materialRelationModal.relationList = []
+        }
+      }
+
+      // 如果没有数据，默认添加一行
+      if (this.materialRelationModal.relationList.length === 0) {
+        this.addMaterialRow()
+      }
+    },
+    addMaterialRow () {
+      this.materialRelationModal.relationList.push({
+        commodityId: this.materialRelationModal.commodityId,
+        materialId: undefined,
+        quantity: 0,
+        unit: '',
+        remark: ''
+      })
+    },
+    removeMaterialRow (index) {
+      this.materialRelationModal.relationList.splice(index, 1)
+    },
+    handleMaterialChange (materialId, index) {
+      const material = this.materialList.find(m => m.id === materialId)
+      if (material) {
+        this.materialRelationModal.relationList[index].unit = material.unit
+      }
+    },
+    filterMaterialOption (input, option) {
+      return option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
+    },
+    handleMaterialRelationClose () {
+      this.materialRelationModal.visible = false
+      this.materialRelationModal.relationList = []
+      this.materialRelationModal.commodityId = null
+    },
+    handleMaterialRelationSubmit () {
+      // 验证数据
+      if (this.materialRelationModal.relationList.length === 0) {
+        this.$message.warning('请至少添加一条原材料关联')
+        return
+      }
+
+      const invalidItem = this.materialRelationModal.relationList.find(item => !item.materialId)
+      if (invalidItem) {
+        this.$message.warning('请选择所有原材料')
+        return
+      }
+
+      this.materialRelationModal.loading = true
+
+      // 将关系列表转换为JSON字符串
+      const relationListStr = JSON.stringify(this.materialRelationModal.relationList)
+
+      this.$put('/cos/commodity-info', {
+        id: this.materialRelationModal.commodityId,
+        relationListStr: relationListStr
+      }).then((r) => {
+        this.$message.success('保存原材料关联成功')
+        this.handleMaterialRelationClose()
+        this.search()
+      }).catch(() => {
+        this.materialRelationModal.loading = false
+      })
+    },
     view (row) {
       this.commodityView.data = row
       this.commodityView.visiable = true

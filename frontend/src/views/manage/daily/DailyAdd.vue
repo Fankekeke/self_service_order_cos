@@ -1,5 +1,5 @@
 <template>
-  <a-modal v-model="show" title="新增公告" @cancel="onClose" :width="800">
+  <a-modal v-model="show" title="新增供应计划" @cancel="onClose" :width="1000">
     <template slot="footer">
       <a-button key="back" @click="onClose">
         取消
@@ -11,77 +11,82 @@
     <a-form :form="form" layout="vertical">
       <a-row :gutter="20">
         <a-col :span="12">
-          <a-form-item label='公告标题' v-bind="formItemLayout">
-            <a-input v-decorator="[
-            'title',
-            { rules: [{ required: true, message: '请输入名称!' }] }
-            ]"/>
+          <a-form-item label='日期' v-bind="formItemLayout">
+            <a-date-picker
+              v-decorator="[
+              'date',
+              { rules: [{ required: true, message: '请选择日期!' }] }
+              ]"              style="width: 100%"
+              placeholder="请选择供应日期"
+              format="YYYY-MM-DD" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item label='上传人' v-bind="formItemLayout">
+          <a-form-item label='备注' v-bind="formItemLayout">
             <a-input v-decorator="[
-            'publisher',
-            { rules: [{ required: true, message: '请输入上传人!' }] }
-            ]"/>
-          </a-form-item>
-        </a-col>
-        <a-col :span="12">
-          <a-form-item label='公告状态' v-bind="formItemLayout">
-            <a-select v-decorator="[
-              'rackUp',
-              { rules: [{ required: true, message: '请输入公告状态!' }] }
-              ]">
-              <a-select-option value="0">下架</a-select-option>
-              <a-select-option value="1">已发布</a-select-option>
-            </a-select>
-          </a-form-item>
-        </a-col>
-        <a-col :span="24">
-          <a-form-item label='公告内容' v-bind="formItemLayout">
-            <a-textarea :rows="6" v-decorator="[
-            'content',
-             { rules: [{ required: true, message: '请输入名称!' }] }
-            ]"/>
-          </a-form-item>
-        </a-col>
-        <a-col :span="24">
-          <a-form-item label='图册' v-bind="formItemLayout">
-            <a-upload
-              name="avatar"
-              action="http://127.0.0.1:9527/file/fileUpload/"
-              list-type="picture-card"
-              :file-list="fileList"
-              @preview="handlePreview"
-              @change="picHandleChange"
-            >
-              <div v-if="fileList.length < 8">
-                <a-icon type="plus" />
-                <div class="ant-upload-text">
-                  Upload
-                </div>
-              </div>
-            </a-upload>
-            <a-modal :visible="previewVisible" :footer="null" @cancel="handleCancel">
-              <img alt="example" style="width: 100%" :src="previewImage" />
-            </a-modal>
+            'remark'
+            ]" placeholder="请输入备注信息"/>
           </a-form-item>
         </a-col>
       </a-row>
+
+      <a-divider>菜品供应计划</a-divider>
+
+      <div class="daily-plan-container">
+        <a-button type="primary" @click="addCommodityRow" style="margin-bottom: 16px">
+          <a-icon type="plus" /> 添加菜品
+        </a-button>
+
+        <a-table
+          :columns="planColumns"
+          :dataSource="dailyPlanList"
+          :pagination="false"
+          :rowKey="(record, index) => index"
+          size="small">
+          <template slot="commodityIdSelect" slot-scope="text, record, index">
+            <a-select
+              v-model="record.commodityId"
+              placeholder="请选择菜品"
+              style="width: 100%"
+              show-search
+              :filter-option="filterCommodityOption">
+              <a-select-option
+                v-for="commodity in commodityList"
+                :key="commodity.id"
+                :value="commodity.id">
+                {{ commodity.name }} ({{ commodity.code }})
+              </a-select-option>
+            </a-select>
+          </template>
+          <template slot="plannedQuantityInput" slot-scope="text, record, index">
+            <a-input-number
+              v-model="record.plannedQuantity"
+              :min="0"              style="width: 100%"
+              placeholder="计划供应量" />
+          </template>
+          <template slot="remarkInput" slot-scope="text, record, index">
+            <a-input
+              v-model="record.remark"
+              placeholder="备注" />
+          </template>
+          <template slot="action" slot-scope="text, record, index">
+            <a-icon
+              type="delete"
+              theme="twoTone"
+              twoToneColor="#ff4d4f"
+              @click="removeCommodityRow(index)"
+              title="删除" />
+          </template>
+        </a-table>
+      </div>
     </a-form>
   </a-modal>
 </template>
 
 <script>
+import moment from 'moment'
 import {mapState} from 'vuex'
-function getBase64 (file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = () => resolve(reader.result)
-    reader.onerror = error => reject(error)
-  })
-}
+moment.locale('zh-cn')
 const formItemLayout = {
   labelCol: { span: 24 },
   wrapperCol: { span: 24 }
@@ -103,6 +108,28 @@ export default {
       },
       set: function () {
       }
+    },
+    planColumns () {
+      return [{
+        title: '菜品',
+        dataIndex: 'commodityId',
+        width: 300,
+        scopedSlots: { customRender: 'commodityIdSelect' }
+      }, {
+        title: '计划供应量',
+        dataIndex: 'plannedQuantity',
+        width: 150,
+        scopedSlots: { customRender: 'plannedQuantityInput' }
+      }, {
+        title: '备注',
+        dataIndex: 'remark',
+        scopedSlots: { customRender: 'remarkInput' }
+      }, {
+        title: '操作',
+        dataIndex: 'action',
+        width: 80,
+        scopedSlots: { customRender: 'action' }
+      }]
     }
   },
   data () {
@@ -112,42 +139,68 @@ export default {
       loading: false,
       fileList: [],
       previewVisible: false,
-      previewImage: ''
+      previewImage: '',
+      dailyPlanList: [],
+      commodityList: []
     }
   },
+  mounted () {
+    this.loadCommodityList()
+  },
   methods: {
-    handleCancel () {
-      this.previewVisible = false
+    moment,
+    loadCommodityList () {
+      this.$get('/cos/commodity-info/list').then((r) => {
+        this.commodityList = r.data.data || []
+      })
     },
-    async handlePreview (file) {
-      if (!file.url && !file.preview) {
-        file.preview = await getBase64(file.originFileObj)
-      }
-      this.previewImage = file.url || file.preview
-      this.previewVisible = true
+    addCommodityRow () {
+      this.dailyPlanList.push({
+        commodityId: undefined,
+        plannedQuantity: 0,
+        remark: ''
+      })
     },
-    picHandleChange ({ fileList }) {
-      this.fileList = fileList
+    removeCommodityRow (index) {
+      this.dailyPlanList.splice(index, 1)
+    },
+    filterCommodityOption (input, option) {
+      return option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
     },
     reset () {
       this.loading = false
       this.form.resetFields()
+      this.dailyPlanList = []
     },
     onClose () {
       this.reset()
       this.$emit('close')
     },
     handleSubmit () {
-      // 获取图片List
-      let images = []
-      this.fileList.forEach(image => {
-        images.push(image.response)
-      })
       this.form.validateFields((err, values) => {
-        values.images = images.length > 0 ? images.join(',') : null
         if (!err) {
+          // 验证至少添加一条菜品计划
+          if (this.dailyPlanList.length === 0) {
+            this.$message.warning('请至少添加一条菜品供应计划')
+            return
+          }
+
+          // 验证所有菜品都已选择
+          const invalidItem = this.dailyPlanList.find(item => !item.commodityId)
+          if (invalidItem) {
+            this.$message.warning('请选择所有菜品')
+            return
+          }
+
           this.loading = true
-          this.$post('/cos/bulletin-info', {
+
+          // 格式化日期
+          values.date = values.date ? moment(values.date).format('YYYY-MM-DD') : null
+
+          // 将菜品计划列表转换为JSON字符串
+          values.dailyPlanStr = JSON.stringify(this.dailyPlanList)
+
+          this.$post('/cos/daily-plan-info', {
             ...values
           }).then((r) => {
             this.reset()
@@ -163,5 +216,8 @@ export default {
 </script>
 
 <style scoped>
-
+.daily-plan-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
 </style>

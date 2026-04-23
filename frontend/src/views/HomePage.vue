@@ -85,31 +85,31 @@
       </a-col>
     </a-row>
     <a-row :gutter="8" class="count-info" v-if="user.roleId == 74">
-      <a-col :span="10" style="margin-top: 10px;padding-left: 0px">
-        <a-card class="visit-count" title="店铺收益统计">
-          <a-skeleton active v-if="loading" />
-          <a-list v-if="!loading" item-layout="vertical" size="large" :pagination="pagination" :data-source="shopOrderRate">
-            <a-list-item slot="renderItem" key="item.title" slot-scope="item, index">
-              <template slot="actions">
-                <span key="shopping-cart">
-                  <a-icon type="shopping-cart" style="margin-right: 8px" />
-                  {{ item.orderNum }} 单
-                </span>
-                <span key="dollar">
-                  <a-icon type="dollar" style="margin-right: 8px" />
-                  ￥{{ item.orderPrice }}
-                </span>
-              </template>
-              <a-list-item-meta :description="item.tag">
-                <a slot="title" :href="item.href">{{ item.userName }}的小店</a>
-                <a-avatar slot="avatar" :src="'http://127.0.0.1:9527/imagesWeb/' + item.avatar" />
-              </a-list-item-meta>
-              {{ item.introduction }}
-            </a-list-item>
-          </a-list>
-        </a-card>
-      </a-col>
-      <a-col :span="14" style="margin-top: 10px;padding-right: 0">
+<!--      <a-col :span="10" style="margin-top: 10px;padding-left: 0px">-->
+<!--        <a-card class="visit-count" title="店铺收益统计">-->
+<!--          <a-skeleton active v-if="loading" />-->
+<!--          <a-list v-if="!loading" item-layout="vertical" size="large" :pagination="pagination" :data-source="shopOrderRate">-->
+<!--            <a-list-item slot="renderItem" key="item.title" slot-scope="item, index">-->
+<!--              <template slot="actions">-->
+<!--                <span key="shopping-cart">-->
+<!--                  <a-icon type="shopping-cart" style="margin-right: 8px" />-->
+<!--                  {{ item.orderNum }} 单-->
+<!--                </span>-->
+<!--                <span key="dollar">-->
+<!--                  <a-icon type="dollar" style="margin-right: 8px" />-->
+<!--                  ￥{{ item.orderPrice }}-->
+<!--                </span>-->
+<!--              </template>-->
+<!--              <a-list-item-meta :description="item.tag">-->
+<!--                <a slot="title" :href="item.href">{{ item.userName }}的小店</a>-->
+<!--                <a-avatar slot="avatar" :src="'http://127.0.0.1:9527/imagesWeb/' + item.avatar" />-->
+<!--              </a-list-item-meta>-->
+<!--              {{ item.introduction }}-->
+<!--            </a-list-item>-->
+<!--          </a-list>-->
+<!--        </a-card>-->
+<!--      </a-col>-->
+      <a-col :span="24" style="margin-top: 10px;padding-right: 0">
         <a-card class="visit-count">
           <a-skeleton active v-if="loading" />
           <a-select style="width: 300px" disabled v-model="shopId" v-if="!loading" @change="shopChange" option-label-prop="label">

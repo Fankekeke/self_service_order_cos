@@ -9,6 +9,7 @@ import cc.mrbird.febs.cos.service.IOrderInfoService;
 import cc.mrbird.febs.cos.service.IUserInfoService;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.NumberUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -21,6 +22,8 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author FanK
@@ -226,5 +229,155 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Override
     public List<LinkedHashMap<String, Object>> getOrderByUserId(Integer userId) {
         return baseMapper.getOrderByUserId(userId);
+    }
+
+    /**
+     * 获取订单结算推荐
+     *
+     * @param orderInfo 订单信息
+     * @return 列表
+     */
+    @Override
+    public LinkedHashMap<String, Object> orderOverRecommend(OrderInfo orderInfo) {
+        List<OrderDetail> orderDetailList = JSONUtil.toList(orderInfo.getOrderDetailStr(), OrderDetail.class);
+        List<Integer> commodityIdList = orderDetailList.stream().map(OrderDetail::getCommodityId).collect(Collectors.toList());
+        List<CommodityInfo> commodityInfoList = commodityInfoService.list(
+                Wrappers.<CommodityInfo>lambdaQuery().in(CommodityInfo::getId, commodityIdList)
+        );
+        Map<Integer, CommodityInfo> commodityInfoMap = commodityInfoList.stream().collect(Collectors.toMap(CommodityInfo::getId, e -> e));
+
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        BigDecimal totalCalories = BigDecimal.ZERO;
+        BigDecimal totalProtein = BigDecimal.ZERO;
+        BigDecimal totalFat = BigDecimal.ZERO;
+        BigDecimal totalCarbohydrate = BigDecimal.ZERO;
+        BigDecimal totalSodium = BigDecimal.ZERO;
+        BigDecimal totalFiber = BigDecimal.ZERO;
+        BigDecimal totalSugar = BigDecimal.ZERO;
+
+        List<Map<String, Object>> commodityDetails = new java.util.ArrayList<>();
+
+        for (OrderDetail detail : orderDetailList) {
+            CommodityInfo commodity = commodityInfoMap.get(detail.getCommodityId());
+            if (commodity == null) {
+                continue;
+            }
+
+            BigDecimal quantityInGrams = detail.getQuantity() != null ? detail.getQuantity() : BigDecimal.ZERO;
+            BigDecimal pricePer100g = detail.getItemPrice() != null ? detail.getItemPrice() : BigDecimal.ZERO;
+
+            BigDecimal itemTotalPrice = pricePer100g.multiply(quantityInGrams).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            totalPrice = totalPrice.add(itemTotalPrice);
+
+            BigDecimal caloriesPer100g = commodity.getCalories() != null ? commodity.getCalories() : BigDecimal.ZERO;
+            BigDecimal proteinPer100g = commodity.getProtein() != null ? commodity.getProtein() : BigDecimal.ZERO;
+            BigDecimal fatPer100g = commodity.getFat() != null ? commodity.getFat() : BigDecimal.ZERO;
+            BigDecimal carbohydratePer100g = commodity.getCarbohydrate() != null ? commodity.getCarbohydrate() : BigDecimal.ZERO;
+            BigDecimal sodiumPer100g = commodity.getSodium() != null ? commodity.getSodium() : BigDecimal.ZERO;
+            BigDecimal fiberPer100g = commodity.getFiber() != null ? commodity.getFiber() : BigDecimal.ZERO;
+            BigDecimal sugarPer100g = commodity.getSugar() != null ? commodity.getSugar() : BigDecimal.ZERO;
+
+            BigDecimal itemCalories = caloriesPer100g.multiply(quantityInGrams).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal itemProtein = proteinPer100g.multiply(quantityInGrams).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal itemFat = fatPer100g.multiply(quantityInGrams).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal itemCarbohydrate = carbohydratePer100g.multiply(quantityInGrams).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal itemSodium = sodiumPer100g.multiply(quantityInGrams).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal itemFiber = fiberPer100g.multiply(quantityInGrams).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal itemSugar = sugarPer100g.multiply(quantityInGrams).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+
+            totalCalories = totalCalories.add(itemCalories);
+            totalProtein = totalProtein.add(itemProtein);
+            totalFat = totalFat.add(itemFat);
+            totalCarbohydrate = totalCarbohydrate.add(itemCarbohydrate);
+            totalSodium = totalSodium.add(itemSodium);
+            totalFiber = totalFiber.add(itemFiber);
+            totalSugar = totalSugar.add(itemSugar);
+
+            Map<String, Object> itemDetail = new LinkedHashMap<>();
+            itemDetail.put("commodityId", commodity.getId());
+            itemDetail.put("commodityName", commodity.getName());
+            itemDetail.put("quantityInGrams", quantityInGrams);
+            itemDetail.put("pricePer100g", pricePer100g);
+            itemDetail.put("totalPrice", itemTotalPrice);
+            itemDetail.put("calories", itemCalories);
+            itemDetail.put("protein", itemProtein);
+            itemDetail.put("fat", itemFat);
+            itemDetail.put("carbohydrate", itemCarbohydrate);
+            itemDetail.put("sodium", itemSodium);
+            itemDetail.put("fiber", itemFiber);
+            itemDetail.put("sugar", itemSugar);
+            commodityDetails.add(itemDetail);
+        }
+
+        LinkedHashMap<String, Object> nutritionSummary = new LinkedHashMap<>();
+        nutritionSummary.put("totalCalories", totalCalories.setScale(2, java.math.RoundingMode.HALF_UP));
+        nutritionSummary.put("totalProtein", totalProtein.setScale(2, java.math.RoundingMode.HALF_UP));
+        nutritionSummary.put("totalFat", totalFat.setScale(2, java.math.RoundingMode.HALF_UP));
+        nutritionSummary.put("totalCarbohydrate", totalCarbohydrate.setScale(2, java.math.RoundingMode.HALF_UP));
+        nutritionSummary.put("totalSodium", totalSodium.setScale(2, java.math.RoundingMode.HALF_UP));
+        nutritionSummary.put("totalFiber", totalFiber.setScale(2, java.math.RoundingMode.HALF_UP));
+        nutritionSummary.put("totalSugar", totalSugar.setScale(2, java.math.RoundingMode.HALF_UP));
+
+        List<String> recommendations = new java.util.ArrayList<>();
+        List<String> warnings = new java.util.ArrayList<>();
+
+        if (totalCalories.compareTo(new BigDecimal("600")) < 0) {
+            recommendations.add("热量摄入偏低（当前：" + totalCalories.setScale(0, java.math.RoundingMode.HALF_UP) + " kcal），建议适当增加主食或蛋白质食物，维持精力充沛需要 600-800 kcal。");
+        } else if (totalCalories.compareTo(new BigDecimal("800")) > 0) {
+            warnings.add("热量摄入偏高（当前：" + totalCalories.setScale(0, java.math.RoundingMode.HALF_UP) + " kcal），建议控制在 600-800 kcal 范围内。");
+        } else {
+            recommendations.add("热量摄入合理（" + totalCalories.setScale(0, java.math.RoundingMode.HALF_UP) + " kcal），符合 600-800 kcal 的标准。");
+        }
+
+        if (totalProtein.compareTo(new BigDecimal("25")) < 0) {
+            recommendations.add("蛋白质摄入不足（当前：" + totalProtein.setScale(1, java.math.RoundingMode.HALF_UP) + " g），建议补充瘦肉、蛋类或豆制品，单顿需达到 25-35 g 以支持肌肉修复。");
+        } else if (totalProtein.compareTo(new BigDecimal("35")) > 0) {
+            warnings.add("蛋白质摄入偏高（当前：" + totalProtein.setScale(1, java.math.RoundingMode.HALF_UP) + " g），建议控制在 25-35 g 范围内。");
+        } else {
+            recommendations.add("蛋白质摄入充足（" + totalProtein.setScale(1, java.math.RoundingMode.HALF_UP) + " g），符合 25-35 g 的标准。");
+        }
+
+        if (totalFat.compareTo(new BigDecimal("20")) < 0) {
+            recommendations.add("脂肪摄入偏低（当前：" + totalFat.setScale(1, java.math.RoundingMode.HALF_UP) + " g），建议适量增加健康脂肪来源，正常范围为 20-25 g。");
+        } else if (totalFat.compareTo(new BigDecimal("25")) > 0) {
+            warnings.add("脂肪摄入偏高（当前：" + totalFat.setScale(1, java.math.RoundingMode.HALF_UP) + " g），建议减少油腻食物，控制在 20-25 g 范围内。");
+        } else {
+            recommendations.add("脂肪摄入合理（" + totalFat.setScale(1, java.math.RoundingMode.HALF_UP) + " g），符合 20-25 g 的标准。");
+        }
+
+        if (totalCarbohydrate.compareTo(new BigDecimal("80")) < 0) {
+            recommendations.add("碳水化合物摄入不足（当前：" + totalCarbohydrate.setScale(1, java.math.RoundingMode.HALF_UP) + " g），建议增加米饭、面食等主食，正常范围为 80-100 g（约 1.5-2 碗熟米饭）。");
+        } else if (totalCarbohydrate.compareTo(new BigDecimal("100")) > 0) {
+            warnings.add("碳水化合物摄入偏高（当前：" + totalCarbohydrate.setScale(1, java.math.RoundingMode.HALF_UP) + " g），建议控制在 80-100 g 范围内。");
+        } else {
+            recommendations.add("碳水化合物摄入合理（" + totalCarbohydrate.setScale(1, java.math.RoundingMode.HALF_UP) + " g），符合 80-100 g 的标准。");
+        }
+
+        if (totalSodium.compareTo(new BigDecimal("800")) > 0) {
+            warnings.add("钠含量超标（当前：" + totalSodium.setScale(0, java.math.RoundingMode.HALF_UP) + " mg），中餐炒菜容易超标，建议清淡饮食，每日应低于 2000 mg。");
+        } else {
+            recommendations.add("钠含量控制良好（" + totalSodium.setScale(0, java.math.RoundingMode.HALF_UP) + " mg），低于 800 mg 的建议值。");
+        }
+
+        if (totalFiber.compareTo(new BigDecimal("8")) < 0) {
+            recommendations.add("膳食纤维摄入不足（当前：" + totalFiber.setScale(1, java.math.RoundingMode.HALF_UP) + " g），建议多吃蔬菜、水果和粗粮，单顿需达到 8-10 g。");
+        } else {
+            recommendations.add("膳食纤维摄入充足（" + totalFiber.setScale(1, java.math.RoundingMode.HALF_UP) + " g），符合 8-10 g 的标准。");
+        }
+
+        if (totalSugar.compareTo(new BigDecimal("15")) > 0) {
+            warnings.add("添加糖摄入偏高（当前：" + totalSugar.setScale(1, java.math.RoundingMode.HALF_UP) + " g），建议减少含糖饮料和甜味酱汁，应低于 15 g。");
+        } else {
+            recommendations.add("添加糖控制良好（" + totalSugar.setScale(1, java.math.RoundingMode.HALF_UP) + " g），低于 15 g 的建议值。");
+        }
+
+        LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+        result.put("totalPrice", totalPrice.setScale(2, java.math.RoundingMode.HALF_UP));
+        result.put("nutritionSummary", nutritionSummary);
+        result.put("commodityDetails", commodityDetails);
+        result.put("recommendations", recommendations);
+        result.put("warnings", warnings);
+
+        return result;
     }
 }

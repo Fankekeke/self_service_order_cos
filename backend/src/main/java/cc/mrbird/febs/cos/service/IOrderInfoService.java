@@ -93,4 +93,12 @@ public interface IOrderInfoService extends IService<OrderInfo> {
      * @return 结果
      */
     List<LinkedHashMap<String, Object>> getOrderByUserId(@Param("userId") Integer userId);
+
+    /**
+     * 获取订单结算推荐
+     *
+     * @param orderInfo 订单信息
+     * @return 列表
+     */
+    LinkedHashMap<String, Object> orderOverRecommend(OrderInfo orderInfo);
 }

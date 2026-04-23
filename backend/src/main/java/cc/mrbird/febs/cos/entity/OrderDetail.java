@@ -36,7 +36,7 @@ public class OrderDetail implements Serializable {
     private Integer userId;
 
     /**
-     * 订单状态（0.未收货 1.已收货）
+     * 订单状态
      */
     private String orderStatus;
 

@@ -57,7 +57,7 @@ public class OrderInfo implements Serializable {
     private String remark;
 
     /**
-     * 订单状态（0.正在拼单 1.已完成 2.拼单失败）
+     * 订单状态（0.排队中 1.等待取餐 2.已经取餐）
      */
     private Integer orderStatus;
 
@@ -105,5 +105,8 @@ public class OrderInfo implements Serializable {
 
     @TableField(exist = false)
     private Integer type;
+
+    @TableField(exist = false)
+    private String orderDetailStr;
 
 }

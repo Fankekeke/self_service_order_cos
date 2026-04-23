@@ -59,6 +59,16 @@ public class DailySupplyPlanDetailController {
     }
 
     /**
+     * 查询今日供应菜品信息
+     *
+     * @return 列表
+     */
+    @GetMapping("/queryCommodityByDate")
+    public R queryCommodityByDate() {
+        return R.ok(dailySupplyPlanDetailService.queryCommodityByDate());
+    }
+
+    /**
      * 新增每日供应信息
      *
      * @param dailySupplyPlanDetail 每日供应信息
@@ -87,6 +97,17 @@ public class DailySupplyPlanDetailController {
 
         boolean result = dailySupplyPlanDetailService.batchSave(list, dailySupplyPlanDetail.getDate());
         return R.ok(result);
+    }
+
+    /**
+     * 查询每日供应采购计划
+     *
+     * @param date 日期
+     * @return 结果
+     */
+    @GetMapping("/querySupplyPlanMaterial")
+    public R querySupplyPlanMaterial(String date) {
+        return R.ok(dailySupplyPlanDetailService.querySupplyPlanMaterial(date));
     }
 
     /**

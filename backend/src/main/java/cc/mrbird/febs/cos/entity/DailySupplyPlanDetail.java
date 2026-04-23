@@ -67,21 +67,6 @@ public class DailySupplyPlanDetail implements Serializable {
     private BigDecimal estimatedMaterialCost;
 
     /**
-     * 实际原材料成本
-     */
-    private BigDecimal actualMaterialCost;
-
-    /**
-     * 已售数量
-     */
-    private Integer soldQuantity;
-
-    /**
-     * 剩余数量
-     */
-    private Integer remainingQuantity;
-
-    /**
      * 备注
      */
     private String remark;

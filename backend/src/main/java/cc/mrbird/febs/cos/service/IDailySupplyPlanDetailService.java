@@ -24,6 +24,13 @@ public interface IDailySupplyPlanDetailService extends IService<DailySupplyPlanD
     IPage<LinkedHashMap<String, Object>> queryPage(Page<DailySupplyPlanDetail> page, DailySupplyPlanDetail dailySupplyPlanDetail);
 
     /**
+     * 查询今日供应菜品信息
+     *
+     * @return 列表
+     */
+    LinkedHashMap<String, Object> queryCommodityByDate();
+
+    /**
      * 检查指定日期是否已存在供应计划
      *
      * @param date 日期
@@ -39,4 +46,12 @@ public interface IDailySupplyPlanDetailService extends IService<DailySupplyPlanD
      * @return 是否成功
      */
     boolean batchSave(List<DailySupplyPlanDetail> list, String date);
+
+    /**
+     * 查询每日供应计划明细
+     *
+     * @param date 日期
+     * @return 结果
+     */
+    LinkedHashMap<String, Object> querySupplyPlanMaterial(String date);
 }

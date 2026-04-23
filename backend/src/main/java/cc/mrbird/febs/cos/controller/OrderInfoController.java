@@ -32,6 +32,17 @@ public class OrderInfoController {
     }
 
     /**
+     * 获取订单结算推荐
+     *
+     * @param orderInfo 订单信息
+     * @return 列表
+     */
+    @GetMapping("/orderOverRecommend")
+    public R orderOverRecommend(OrderInfo orderInfo) {
+        return R.ok(orderInfoService.orderOverRecommend(orderInfo));
+    }
+
+    /**
      * 获取订单详情
      *
      * @param orderCode 订单编号

@@ -3,11 +3,9 @@ package cc.mrbird.febs.cos.service.impl;
 import cc.mrbird.febs.cos.dao.ShopInfoMapper;
 import cc.mrbird.febs.cos.entity.*;
 import cc.mrbird.febs.cos.dao.OrderInfoMapper;
-import cc.mrbird.febs.cos.service.IBulletinInfoService;
-import cc.mrbird.febs.cos.service.ICommodityInfoService;
-import cc.mrbird.febs.cos.service.IOrderInfoService;
-import cc.mrbird.febs.cos.service.IUserInfoService;
+import cc.mrbird.febs.cos.service.*;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -19,10 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +34,10 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     private final ShopInfoMapper shopInfoMapper;
 
     private final IBulletinInfoService bulletinInfoService;
+
+    private final IDailySupplyPlanDetailService dailySupplyPlanDetailService;
+
+    private final IOrderDetailService orderDetailService;
 
     /**
      * 分页查询订单信息
@@ -377,6 +376,90 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         result.put("commodityDetails", commodityDetails);
         result.put("recommendations", recommendations);
         result.put("warnings", warnings);
+
+        return result;
+    }
+
+    /**
+     * 添加订单信息
+     *
+     * @param orderInfo 订单信息
+     * @return 订单信息
+     */
+    @Override
+    public LinkedHashMap<String, Object> orderAdd(OrderInfo orderInfo) {
+        LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+
+        try {
+            orderInfo.setOrderStatus(0);
+            orderInfo.setCreateDate(DateUtil.formatDateTime(new Date()));
+
+            List<OrderDetail> orderDetailList = JSONUtil.toList(orderInfo.getOrderDetailStr(), OrderDetail.class);
+            List<Integer> commodityIdList = orderDetailList.stream().map(OrderDetail::getCommodityId).collect(Collectors.toList());
+            List<CommodityInfo> commodityInfoList = commodityInfoService.list(
+                    Wrappers.<CommodityInfo>lambdaQuery().in(CommodityInfo::getId, commodityIdList)
+            );
+            Map<Integer, CommodityInfo> commodityInfoMap = commodityInfoList.stream().collect(Collectors.toMap(CommodityInfo::getId, e -> e));
+
+            String today = DateUtil.formatDate(new Date());
+            List<DailySupplyPlanDetail> dailySupplyList = dailySupplyPlanDetailService.list(
+                    Wrappers.<DailySupplyPlanDetail>lambdaQuery().eq(DailySupplyPlanDetail::getDate, today)
+            );
+            Map<Integer, DailySupplyPlanDetail> dailySupplyMap = dailySupplyList.stream()
+                    .collect(Collectors.toMap(DailySupplyPlanDetail::getCommodityId, e -> e));
+
+            for (OrderDetail detail : orderDetailList) {
+                CommodityInfo commodityInfo = commodityInfoMap.get(detail.getCommodityId());
+                if (commodityInfo == null) {
+                    result.put("code", 500);
+                    result.put("msg", "餐品不存在");
+                    return result;
+                }
+
+                DailySupplyPlanDetail supplyDetail = dailySupplyMap.get(detail.getCommodityId());
+                if (supplyDetail != null) {
+                    Integer currentQuantity = supplyDetail.getActualQuantity() != null ? supplyDetail.getActualQuantity() : 0;
+                    Integer newQuantity = currentQuantity - detail.getQuantity().intValue();
+
+                    if (newQuantity < 50) {
+                        newQuantity = 0;
+                    }
+
+                    supplyDetail.setActualQuantity(newQuantity);
+                    dailySupplyPlanDetailService.updateById(supplyDetail);
+                }
+            }
+
+            boolean orderSaved = this.save(orderInfo);
+            if (!orderSaved) {
+                result.put("code", 500);
+                result.put("msg", "订单保存失败");
+                return result;
+            }
+
+            for (OrderDetail detail : orderDetailList) {
+                detail.setCode(orderInfo.getCode());
+                detail.setUserId(orderInfo.getUserId());
+                detail.setCreateDate(DateUtil.formatDateTime(new Date()));
+            }
+
+            boolean detailsSaved = orderDetailService.saveBatch(orderDetailList);
+            if (!detailsSaved) {
+                result.put("code", 500);
+                result.put("msg", "订单详情保存失败");
+                return result;
+            }
+
+            result.put("code", 200);
+            result.put("msg", "订单添加成功");
+            result.put("orderId", orderInfo.getId());
+            result.put("orderCode", orderInfo.getCode());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            result.put("code", 500);
+            result.put("msg", "订单添加失败：" + e.getMessage());
+        }
 
         return result;
     }

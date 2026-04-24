@@ -66,6 +66,21 @@ ShopInfo implements Serializable {
     private String status;
 
     /**
+     * 营业星期
+     */
+    private String operateDay;
+
+    /**
+     * 开始营业时间
+     */
+    private String operateStartTime;
+
+    /**
+     * 营业结束时间
+     */
+    private String operateEndTime;
+
+    /**
      * 头像
      */
     @TableField(exist = false)

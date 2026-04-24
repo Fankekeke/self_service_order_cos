@@ -9,14 +9,14 @@ import cc.mrbird.febs.cos.service.IShopInfoService;
 import cc.mrbird.febs.cos.service.IUserInfoService;
 import cc.mrbird.febs.system.service.UserService;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author FanK
@@ -63,6 +63,27 @@ public class ShopInfoController {
      */
     @PutMapping
     public R edit(ShopInfo shopInfo) {
+        Map<String, String> weekMap = new HashMap<String, String>() {
+            {
+                put("周一", "1");
+                put("周二", "2");
+                put("周三", "3");
+                put("周四", "4");
+                put("周五", "5");
+                put("周六", "6");
+                put("周日", "7");
+            }
+        };
+
+        if (StrUtil.isNotEmpty(shopInfo.getOperateDay())) {
+            String[] operateDayList = StrUtil.split(shopInfo.getOperateDay(), ",");
+            List<String> operateDayResult = new ArrayList<>();
+            for (String s : operateDayList) {
+                operateDayResult.add(weekMap.get(s));
+            }
+            shopInfo.setOperateDay(StrUtil.join(",", operateDayResult));
+        }
+
         ShopInfo shopInfoBack = shopInfoService.getById(shopInfo.getId());
         UserInfo userInfo = userInfoService.getById(shopInfoBack.getUserId());
         userInfo.setUserName(shopInfo.getName());
@@ -90,7 +111,6 @@ public class ShopInfoController {
         shopInfo.setCode("S-" + System.currentTimeMillis());
         shopInfo.setStatus("0");
         shopInfo.setUserId(userInfo.getId());
-
 
         userInfoService.updateById(userInfo);
         userService.registShop(shopInfo.getCode(),"1234qwer", shopInfo);

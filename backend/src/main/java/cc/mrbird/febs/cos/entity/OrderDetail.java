@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 /**
- * 拼单详情
+ * 订单详情
  *
  * @author FanK
  */

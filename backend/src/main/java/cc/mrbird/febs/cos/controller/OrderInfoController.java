@@ -37,7 +37,7 @@ public class OrderInfoController {
      * @param orderInfo 订单信息
      * @return 列表
      */
-    @GetMapping("/orderOverRecommend")
+    @PostMapping("/orderOverRecommend")
     public R orderOverRecommend(OrderInfo orderInfo) {
         return R.ok(orderInfoService.orderOverRecommend(orderInfo));
     }
@@ -106,6 +106,18 @@ public class OrderInfoController {
     @DeleteMapping("/{ids}")
     public R deleteByIds(@PathVariable("ids") List<Integer> ids) {
         return R.ok(orderInfoService.removeByIds(ids));
+    }
+
+
+    /**
+     * 添加订单信息
+     *
+     * @param orderInfo 订单信息
+     * @return 订单信息
+     */
+    @GetMapping("/orderAdd")
+    public R orderAdd(OrderInfo orderInfo) {
+        return R.ok(orderInfoService.orderAdd(orderInfo));
     }
 
 }

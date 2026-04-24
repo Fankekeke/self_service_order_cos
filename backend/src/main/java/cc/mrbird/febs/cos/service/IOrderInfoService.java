@@ -101,4 +101,12 @@ public interface IOrderInfoService extends IService<OrderInfo> {
      * @return 列表
      */
     LinkedHashMap<String, Object> orderOverRecommend(OrderInfo orderInfo);
+
+    /**
+     * 添加订单信息
+     *
+     * @param orderInfo 订单信息
+     * @return 订单信息
+     */
+    LinkedHashMap<String, Object> orderAdd(OrderInfo orderInfo);
 }

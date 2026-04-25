@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -108,6 +109,10 @@ public class OrderInfoController {
         return R.ok(orderInfoService.removeByIds(ids));
     }
 
+    @PutMapping("")
+    public R edit(OrderInfo orderInfo) {
+        return R.ok(orderInfoService.updateById(orderInfo));
+    }
 
     /**
      * 添加订单信息

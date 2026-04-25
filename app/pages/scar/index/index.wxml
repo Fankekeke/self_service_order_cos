@@ -1,62 +1,256 @@
+
 <view class="cu-custom" style="height:{{CustomBar}}px;">
     <view class="cu-bar fixed none-bg text-white bg-img" style="height:{{CustomBar}}px;padding-top:{{StatusBar}}px;">
-        <view class="head-title canui-head-title">购物车</view>
+        <view class="head-title canui-head-title">今日菜品</view>
     </view>
 </view>
-<view class="box" style="top:{{CustomBar}}px;">
-    <view class="canui-kong" wx:if='{{ orderList.length == 0 }}'>
+
+<view class="canui-meituan-container" style="top:{{CustomBar}}px;height:calc(100vh - {{CustomBar}}px - 100rpx);">
+    <view class="canui-kong" wx:if='{{ !groupedGoods || groupedGoods.length == 0 }}'>
         <view class="bg-gradual-orange padding radius text-center shadow-blur canui-kong-icon">
             <text class="icon-cart"></text>
         </view>
         <view class="text-lg padding text-center">
-            <text class="text-grey">购物车竟然是空的</text>
+            <text class="text-grey">暂无可供菜品</text>
         </view>
     </view>
-    <view class="canui-card-order margin-top">
-        <checkbox-group bindchange="checkboxChange">
-            <view class="canui-order-item bg-white" wx:for="{{ orderList }}">
-                <view class="head-title-box">
-                    <checkbox class='round red' value="{{item.orderId}}" checked="{{ item.checked ? true : false }}"></checkbox>
-                    <text class="icon-shop"></text>
-                    <text>{{ item.userName }}</text>
-                    <text class="icon-right"></text>
+
+    <view class="canui-meituan-layout" wx:else>
+        <scroll-view class="canui-left-category" scroll-y scroll-with-animation>
+            <view class="category-item {{ currentCategoryIndex === index ? 'active' : '' }}"
+                  wx:for="{{ groupedGoods }}"
+                  wx:key="typeName"
+                  data-index="{{ index }}"
+                  bindtap="switchCategory">
+                <text class="category-name">{{ item.typeName }}</text>
+                <view class="category-count" wx:if="{{ getCategoryCartCount(item.typeName) > 0 }}">
+                    {{ getCategoryCartCount(item.typeName) }}
                 </view>
-                <view class="cu-list menu menu-avatar">
-                    <view class="cu-item">
-                        <view class="canui-goods" style="width: 100%">
-                            <view class="cu-avatar radius lg" style="background-image:url(http://127.0.0.1:9527/imagesWeb/{{ item.image }});"></view>
-                            <view class='content' style="padding-left: 40px">
-                                <view class='canui-xzwz'>{{ item.name }}</view>
-                                <view class='canui-tool'>
-                                    <text class='text-price text-red'>{{ item.price }}</text>
-                                    <view class='action-btn-sum' style="font-size: 11px">
-                                        {{ item.days }}
-                                    </view>
+            </view>
+        </scroll-view>
+
+        <scroll-view class="canui-right-goods"
+                     scroll-y
+                     scroll-with-animation
+                     scroll-into-view="{{ scrollToView }}"
+                     bindscroll="onGoodsScroll">
+            <view class="canui-category-section"
+                  wx:for="{{ groupedGoods }}"
+                  wx:key="typeName"
+                  id="category-{{ index }}">
+                <view class="canui-section-header">
+                    <text class="section-title">{{ item.typeName }}</text>
+                    <text class="section-count">({{ item.goods.length }})</text>
+                </view>
+
+                <view class="canui-goods-item"
+                      wx:for="{{ item.goods }}"
+                      wx:for-item="goods"
+                      wx:key="commodity.id"
+                      bindtap="showGoodsDetail"
+                      data-item="{{ goods }}">
+                    <view class="goods-image-box">
+                        <image src="http://127.0.0.1:9527/imagesWeb/{{ goods.commodity.images }}" mode="aspectFill"></image>
+                        <view class="goods-tag" wx:if="{{ goods.availableQuantity > 0 }}">有货</view>
+                        <view class="goods-tag soldout" wx:else>售罄</view>
+                    </view>
+
+                    <view class="goods-detail">
+                        <view class="goods-name">{{ goods.commodity.name }}</view>
+                        <view class="goods-desc text-gray text-xs">{{ goods.commodity.content }}</view>
+                        <view class="goods-model text-gray text-xs">{{ goods.commodity.model }}</view>
+
+                        <view class="goods-action">
+                            <view class="goods-price-box">
+                                <text class="text-price text-red text-xl">{{ goods.unitPrice }}</text>
+                                <text class="text-gray text-xs stock-text">库存{{ goods.availableQuantity }}</text>
+                            </view>
+
+                            <view class="goods-stepper" wx:if="{{ goods.availableQuantity > 0 }}">
+                                <view class="stepper-btn minus"
+                                      wx:if="{{ getGoodsQuantity(goods.commodity.id) > 0 }}"
+                                      catchtap="decreaseQuantity"
+                                      data-id="{{ goods.commodity.id }}">
+                                    <text class="icon-reduce"></text>
+                                </view>
+                                <view class="stepper-num" wx:if="{{ getGoodsQuantity(goods.commodity.id) > 0 }}">
+                                    {{ getGoodsQuantity(goods.commodity.id) }}
+                                </view>
+                                <view class="stepper-btn add" catchtap="addToCart" data-item="{{ goods }}">
+                                    <text class="icon-add"></text>
                                 </view>
                             </view>
                         </view>
                     </view>
                 </view>
             </view>
-        </checkbox-group>
+
+            <view class="canui-bottom-space"></view>
+        </scroll-view>
     </view>
 </view>
-<view class="cu-bar bg-white solid-bottom canui-foor-fixed">
-    <view class="action canui-checked">
-        <checkbox class='round red' checked="{{ allChecked }}" bindtap='checkAll'></checkbox>
-        全选
+
+<view class="cu-bar bg-white solid-bottom canui-cart-bar">
+    <view class="cart-left" bindtap="showCartDetail">
+        <view class="cart-icon-box">
+            <text class="icon-cart"></text>
+            <view class="cart-badge" wx:if="{{ cartCount > 0 }}">{{ cartCount }}</view>
+        </view>
+        <view class="cart-info">
+            <view class="cart-label">购物车</view>
+            <view class="cart-total">¥{{ totalPrice }}</view>
+        </view>
     </view>
-    <!-- <view class="action canui-delete">
-        <button class='cu-btn icon-delete'></button>
-    </view> -->
-    <view class='submit canui-price'>
-        合计
-        <text class="text-red text-price">{{ allPrice }}</text>
-    </view>
-    <view class='bg-red submit canui-submit' bindtap='submit'>去结算</view>
+    <view class='bg-red cart-submit' bindtap='goToSettlement'>去结算</view>
 </view>
-<!-- <view class='action-btn-sum'>
-    <button class='cu-btn'>-</button>
-    <input class='ca-sum' name='input' value="1"></input>
-    <button class='cu-btn'>+</button>
-</view> -->
+
+<view class="canui-goods-popup {{ showDetailPopup ? 'show' : '' }}" catchtap="hideGoodsDetail">
+    <view class="popup-mask"></view>
+    <view class="popup-content" catchtap="stopPropagation">
+        <view class="popup-close" bindtap="hideGoodsDetail">
+            <text class="icon-close"></text>
+        </view>
+
+        <scroll-view class="popup-scroll" scroll-y>
+            <view class="popup-header">
+                <image src="http://127.0.0.1:9527/imagesWeb/{{ selectedGoods.commodity.images }}" mode="aspectFill" class="popup-image"></image>
+                <view class="popup-title-box">
+                    <view class="popup-goods-name">{{ selectedGoods.commodity.name }}</view>
+                    <view class="popup-goods-price">
+                        <text class="text-price text-red text-xxl">{{ selectedGoods.unitPrice }}</text>
+                        <text class="text-gray text-xs">/份</text>
+                    </view>
+                    <view class="popup-goods-stock">库存: {{ selectedGoods.availableQuantity }}</view>
+                </view>
+            </view>
+
+            <view class="popup-info-section">
+                <view class="info-row">
+                    <text class="info-label">规格:</text>
+                    <text class="info-value">{{ selectedGoods.commodity.model }}</text>
+                </view>
+                <view class="info-row">
+                    <text class="info-label">描述:</text>
+                    <text class="info-value">{{ selectedGoods.commodity.content }}</text>
+                </view>
+                <view class="info-row" wx:if="{{ selectedGoods.commodity.calories }}">
+                    <text class="info-label">热量:</text>
+                    <text class="info-value">{{ selectedGoods.commodity.calories }}千卡</text>
+                </view>
+                <view class="info-row" wx:if="{{ selectedGoods.commodity.protein }}">
+                    <text class="info-label">蛋白质:</text>
+                    <text class="info-value">{{ selectedGoods.commodity.protein }}g</text>
+                </view>
+                <view class="info-row" wx:if="{{ selectedGoods.commodity.allergenInfo }}">
+                    <text class="info-label">过敏原:</text>
+                    <text class="info-value warning">{{ selectedGoods.commodity.allergenInfo }}</text>
+                </view>
+            </view>
+
+            <view class="popup-spec-section">
+                <view class="spec-title">选择规格</view>
+                <view class="spec-options">
+                    <view class="spec-option {{ selectedSpec === 'small' ? 'active' : '' }}"
+                          bindtap="selectSpec"
+                          data-spec="small">
+                        <view class="spec-option-header">
+                            <text class="spec-name">小份</text>
+                            <view class="spec-check" wx:if="{{ selectedSpec === 'small' }}">
+                                <text class="icon-check"></text>
+                            </view>
+                        </view>
+                        <view class="spec-detail">
+                            <text class="spec-weight">50g</text>
+                            <text class="spec-price">¥{{ smallPrice }}</text>
+                        </view>
+                    </view>
+
+                    <view class="spec-option {{ selectedSpec === 'large' ? 'active' : '' }}"
+                          bindtap="selectSpec"
+                          data-spec="large">
+                        <view class="spec-option-header">
+                            <text class="spec-name">大份</text>
+                            <view class="spec-check" wx:if="{{ selectedSpec === 'large' }}">
+                                <text class="icon-check"></text>
+                            </view>
+                        </view>
+                        <view class="spec-detail">
+                            <text class="spec-weight">100g</text>
+                            <text class="spec-price">¥{{ largePrice }}</text>
+                        </view>
+                    </view>
+                </view>
+            </view>
+
+            <view class="popup-nutrition" wx:if="{{ selectedGoods.commodity.nutritionRemark }}">
+                <view class="nutrition-title">营养说明</view>
+                <view class="nutrition-text">{{ selectedGoods.commodity.nutritionRemark }}</view>
+            </view>
+        </scroll-view>
+
+        <view class="popup-footer">
+            <view class="footer-stepper">
+                <view class="footer-btn minus"
+                      wx:if="{{ popupQuantity > 1 }}"
+                      bindtap="decreasePopupQuantity">
+                    <text class="icon-reduce"></text>
+                </view>
+                <view class="footer-num">{{ popupQuantity }}</view>
+                <view class="footer-btn add" bindtap="increasePopupQuantity">
+                    <text class="icon-add"></text>
+                </view>
+            </view>
+            <view class="footer-add-btn" bindtap="confirmAddToCart">
+                <text class="btn-text">加入购物车</text>
+                <text class="btn-price">{{ getPopupTotalPrice() }}</text>
+            </view>
+        </view>
+    </view>
+</view>
+
+<view class="canui-cart-popup {{ showCartPopup ? 'show' : '' }}" catchtap="hideCartDetail">
+    <view class="popup-mask"></view>
+    <view class="cart-popup-content" catchtap="stopPropagation">
+        <view class="cart-popup-header">
+            <view class="cart-popup-title">购物车</view>
+            <view class="cart-clear-btn" wx:if="{{ cartList.length > 0 }}" bindtap="clearCart">
+                <text class="icon-delete"></text>
+                <text>清空</text>
+            </view>
+        </view>
+
+        <scroll-view class="cart-popup-list" scroll-y wx:if="{{ cartList.length > 0 }}">
+            <view class="cart-item" wx:for="{{ cartList }}" wx:key="commodityId">
+                <view class="cart-item-image">
+                    <image src="http://127.0.0.1:9527/imagesWeb/{{ item.image }}" mode="aspectFill"></image>
+                </view>
+                <view class="cart-item-info">
+                    <view class="cart-item-name">{{ item.name }}</view>
+                    <view class="cart-item-spec">{{ item.specName }} ({{ item.weight }})</view>
+                    <view class="cart-item-price">
+                        <text class="text-price text-red">{{ item.unitPrice }}</text>
+                    </view>
+                </view>
+                <view class="cart-item-action">
+                    <view class="cart-stepper">
+                        <view class="cart-stepper-btn minus" bindtap="decreaseCartItem" data-index="{{ index }}">
+                            <text class="icon-reduce"></text>
+                        </view>
+                        <view class="cart-stepper-num">{{ item.quantity }}</view>
+                        <view class="cart-stepper-btn add" bindtap="increaseCartItem" data-index="{{ index }}">
+                            <text class="icon-add"></text>
+                        </view>
+                    </view>
+                    <view class="cart-item-delete" bindtap="deleteCartItem" data-index="{{ index }}">
+                        <text class="icon-delete"></text>
+                    </view>
+                </view>
+            </view>
+        </scroll-view>
+
+        <view class="cart-empty" wx:else>
+            <text class="icon-cart"></text>
+            <text class="empty-text">购物车是空的</text>
+        </view>
+    </view>
+</view>

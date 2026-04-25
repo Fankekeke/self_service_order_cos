@@ -130,31 +130,31 @@
       </a-row>
       <br/>
       <br/>
-      <a-row style="padding-left: 24px;padding-right: 24px;">
-        <a-col style="margin-bottom: 15px"><span style="font-size: 15px;font-weight: 650;color: #000c17">订单评价</span></a-col>
-        <a-col :span="24">
-          <a-list
-            class="comment-list"
-            :header="`${replyList.length} 回复`"
-            item-layout="horizontal"
-            :data-source="replyList"
-          >
-            <a-list-item slot="renderItem" slot-scope="item, index">
-              <a-comment :author="item.author" :avatar="item.avatar">
-                <template slot="actions">
-                  <span v-for="(action, index) in item.actions" :key="index">{{ action }}</span>
-                </template>
-                <p slot="content" style="margin-left: -40px">
-                  {{ item.content }}
-                </p>
-                <a-tooltip slot="datetime" :title="item.datetime.format('YYYY-MM-DD HH:mm:ss')">
-                  <span>{{ item.datetime.fromNow() }}</span>
-                </a-tooltip>
-              </a-comment>
-            </a-list-item>
-          </a-list>
-        </a-col>
-      </a-row>
+<!--      <a-row style="padding-left: 24px;padding-right: 24px;">-->
+<!--        <a-col style="margin-bottom: 15px"><span style="font-size: 15px;font-weight: 650;color: #000c17">订单评价</span></a-col>-->
+<!--        <a-col :span="24">-->
+<!--          <a-list-->
+<!--            class="comment-list"-->
+<!--            :header="`${replyList.length} 回复`"-->
+<!--            item-layout="horizontal"-->
+<!--            :data-source="replyList"-->
+<!--          >-->
+<!--            <a-list-item slot="renderItem" slot-scope="item, index">-->
+<!--              <a-comment :author="item.author" :avatar="item.avatar">-->
+<!--                <template slot="actions">-->
+<!--                  <span v-for="(action, index) in item.actions" :key="index">{{ action }}</span>-->
+<!--                </template>-->
+<!--                <p slot="content" style="margin-left: -40px">-->
+<!--                  {{ item.content }}-->
+<!--                </p>-->
+<!--                <a-tooltip slot="datetime" :title="item.datetime.format('YYYY-MM-DD HH:mm:ss')">-->
+<!--                  <span>{{ item.datetime.fromNow() }}</span>-->
+<!--                </a-tooltip>-->
+<!--              </a-comment>-->
+<!--            </a-list-item>-->
+<!--          </a-list>-->
+<!--        </a-col>-->
+<!--      </a-row>-->
       <br/>
       <br/>
     </div>

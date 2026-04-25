@@ -1,20 +1,31 @@
+
 const app = getApp();
 let http = require('../../../utils/request')
 Page({
     data: {
         StatusBar: app.globalData.StatusBar,
         CustomBar: app.globalData.CustomBar,
-        orderList: [],
-        shopList: [],
+        goodsInfo: null,
+        groupedGoods: [],
+        cartList: [],
+        cartCount: 0,
+        totalPrice: 0,
         userInfo: null,
-        allPrice: 0,
-        allChecked: true
+        currentCategoryIndex: 0,
+        scrollToView: 'category-0',
+        categoryPositions: [],
+        showDetailPopup: false,
+        selectedGoods: null,
+        selectedSpec: 'large',
+        popupQuantity: 1,
+        smallPrice: 0,
+        largePrice: 0,
+        showCartPopup: false
     },
     onLoad: function (options) {
 
     },
     onShow() {
-        console.log(111)
         this.isLogin()
     },
     isLogin() {
@@ -24,7 +35,8 @@ Page({
                 this.setData({
                     userInfo: res.data
                 })
-                this.selShopDetail()
+                this.loadTodayGoods()
+                this.loadCartData()
             },
             fail: res => {
                 wx.showToast({
@@ -35,145 +47,349 @@ Page({
             }
         })
     },
-    timeFormat(time) {
-        var nowTime = new Date();
-        var day = nowTime.getDate();
-        var hours = parseInt(nowTime.getHours());
-        var minutes = nowTime.getMinutes();
-        // 开始分解付入的时间
-        var timeday = time.substring(8, 10);
-        var timehours = parseInt(time.substring(11, 13));
-        var timeminutes = time.substring(14, 16);
-        var d_day = Math.abs(day - timeday);
-        var d_hours = hours - timehours;
-        var d_minutes = Math.abs(minutes - timeminutes);
-        if (d_day <= 1) {
-            switch (d_day) {
-                case 0:
-                    if (d_hours == 0 && d_minutes > 0) {
-                        return d_minutes + '分钟前';
-                    } else if (d_hours == 0 && d_minutes == 0) {
-                        return '1分钟前';
-                    } else {
-                        return d_hours + '小时前';
-                    }
-                    break;
-                case 1:
-                    if (d_hours < 0) {
-                        return (24 + d_hours) + '小时前';
-                    } else {
-                        return d_day + '天前';
-                    }
-                    break;
+    loadTodayGoods() {
+        http.get('queryCommodityByDate').then((r) => {
+            console.log('今日菜品数据:', r)
+            if (r && r.commodityList) {
+                const grouped = this.groupGoodsByType(r.commodityList)
+                this.setData({
+                    goodsInfo: r,
+                    groupedGoods: grouped
+                })
+                setTimeout(() => {
+                    this.calculateCategoryPositions()
+                }, 500)
             }
-        } else if (d_day > 1 && d_day < 10) {
-            return d_day + '天前';
-        } else {
-            return time;
-        }
-    },
-    selShopDetail() {
-        http.get('getShopDetail', {shopId: 1}).then((r) => {
-            let ShopList = []
-            r.goods.forEach(item => {
-                ShopList.push({ index: item.id, image: item.images.split(',')[0], title: item.name, price: item.price, sales: item.orderNum })
-            });
-            this.setData({
-                shopInfo: r,
-                shopList: ShopList
-            })
-            console.log(JSON.stringify(ShopList))
         })
     },
-    // selGoodsCart(userId) {
-    //     http.get('selGoodsCart', { userId }).then((r) => {
-    //         let allPrice = 0
-    //         r.data.forEach(item => {
-    //             allPrice += item.price
-    //             item.checked = true
-    //             item.image = item.images.split(',')[0],
-    //                 item.days = this.timeFormat(item.createDate)
-    //         });
-    //         this.setData({ orderList: r.data, allPrice })
-    //     })
-    // },
-    checkAll(e) {
-        let orderList = this.data.orderList
-        if (this.data.allChecked) {
-            orderList.forEach(item => {
-                item.checked = false
-            });
-            this.setData({
-                allPrice: 0,
-                orderList,
-                allChecked: false
-            })
-        } else {
-            let allPrice = 0
-            orderList.forEach(item => {
-                item.checked = true
-                allPrice += item.price
-            });
-            this.setData({
-                allPrice,
-                orderList,
-                allChecked: true
-            })
-        }
-    },
-    checkboxChange(e) {
-        let orderList = this.data.orderList
-        orderList.forEach(item => {
-            item.checked = false
-        });
-        if (e.detail.value.length == 0) {
-            this.setData({ allPrice: 0, orderList })
-        } else {
-            let allPrice = 0
-            orderList.forEach(item => {
-                e.detail.value.forEach(element => {
-                    if (element == item.orderId) {
-                        item.checked = true
-                        allPrice += item.price
-                    }
-                });
-            });
-            this.setData({ allPrice: allPrice, orderList })
-        }
-    },
-    submit: function () {
-        let orderIds = []
-        this.data.orderList.forEach(item => {
-            if (item.checked) {
-                orderIds.push(item.orderId)
+    groupGoodsByType(goodsList) {
+        const groupMap = {}
+
+        goodsList.forEach(item => {
+            const typeName = item.typeName || '其他'
+            if (!groupMap[typeName]) {
+                groupMap[typeName] = {
+                    typeName: typeName,
+                    goods: []
+                }
             }
-        });
-        if (orderIds.length == 0) {
+            groupMap[typeName].goods.push(item)
+        })
+
+        return Object.values(groupMap)
+    },
+    calculateCategoryPositions() {
+        const query = wx.createSelectorQuery()
+        const positions = []
+
+        this.data.groupedGoods.forEach((item, index) => {
+            query.select(`#category-${index}`).boundingClientRect()
+        })
+
+        query.exec((res) => {
+            res.forEach((rect, index) => {
+                if (rect) {
+                    positions[index] = rect.top
+                }
+            })
+            this.setData({ categoryPositions: positions })
+        })
+    },
+    loadCartData() {
+        const cart = wx.getStorageSync('cart') || []
+        this.updateCartSummary(cart)
+    },
+    updateCartSummary(cart) {
+        let count = 0
+        let total = 0
+
+        cart.forEach(item => {
+            count += item.quantity
+            total += item.unitPrice * item.quantity
+        })
+
+        this.setData({
+            cartList: cart,
+            cartCount: count,
+            totalPrice: total.toFixed(2)
+        })
+    },
+    getGoodsQuantity(commodityId) {
+        const cartItems = this.data.cartList.filter(item => item.commodityId === commodityId)
+        let total = 0
+        cartItems.forEach(item => {
+            total += item.quantity
+        })
+        return total
+    },
+    getCategoryCartCount(typeName) {
+        let count = 0
+        this.data.cartList.forEach(item => {
+            if (item.typeName === typeName) {
+                count += item.quantity
+            }
+        })
+        return count
+    },
+    switchCategory(e) {
+        const index = e.currentTarget.dataset.index
+        this.setData({
+            currentCategoryIndex: index,
+            scrollToView: `category-${index}`
+        })
+    },
+    onGoodsScroll(e) {
+        const scrollTop = e.detail.scrollTop
+        const positions = this.data.categoryPositions
+
+        for (let i = positions.length - 1; i >= 0; i--) {
+            if (scrollTop >= positions[i] - 100) {
+                if (this.data.currentCategoryIndex !== i) {
+                    this.setData({
+                        currentCategoryIndex: i
+                    })
+                }
+                break
+            }
+        }
+    },
+    showGoodsDetail(e) {
+        const item = e.currentTarget.dataset.item
+        const unitPrice = item.unitPrice
+        const smallPrice = parseFloat((unitPrice * 0.6).toFixed(2))
+
+        this.setData({
+            showDetailPopup: true,
+            selectedGoods: item,
+            selectedSpec: 'large',
+            popupQuantity: 1,
+            smallPrice: smallPrice,
+            largePrice: unitPrice
+        })
+        wx.vibrateShort()
+    },
+    hideGoodsDetail() {
+        this.setData({
+            showDetailPopup: false
+        })
+    },
+    stopPropagation() {
+    },
+    selectSpec(e) {
+        const spec = e.currentTarget.dataset.spec
+        this.setData({
+            selectedSpec: spec
+        })
+        wx.vibrateShort()
+    },
+    increasePopupQuantity() {
+        this.setData({
+            popupQuantity: this.data.popupQuantity + 1
+        })
+        wx.vibrateShort()
+    },
+    decreasePopupQuantity() {
+        if (this.data.popupQuantity > 1) {
+            this.setData({
+                popupQuantity: this.data.popupQuantity - 1
+            })
+            wx.vibrateShort()
+        }
+    },
+    getPopupTotalPrice() {
+        if (!this.data.selectedGoods) return '0.00'
+
+        const specPrice = this.data.selectedSpec === 'small' ? this.data.smallPrice : this.data.largePrice
+
+        return (specPrice * this.data.popupQuantity).toFixed(2)
+    },
+    addToCart(e) {
+        const item = e.currentTarget.dataset.item
+        const commodity = item.commodity
+
+        let cart = wx.getStorageSync('cart') || []
+
+        const existingIndex = cart.findIndex(c => c.commodityId === commodity.id && c.spec === 'large')
+
+        if (existingIndex > -1) {
+            cart[existingIndex].quantity += 1
+        } else {
+            cart.push({
+                commodityId: commodity.id,
+                code: commodity.code,
+                name: commodity.name,
+                price: commodity.price,
+                unitPrice: item.unitPrice,
+                image: commodity.images,
+                model: commodity.model,
+                quantity: 1,
+                typeName: item.typeName,
+                spec: 'large',
+                specName: '大份',
+                weight: '100g'
+            })
+        }
+
+        wx.setStorageSync('cart', cart)
+        this.updateCartSummary(cart)
+
+        wx.vibrateShort()
+        wx.showToast({
+            title: '已加入购物车',
+            icon: 'success',
+            duration: 1500
+        })
+    },
+    decreaseQuantity(e) {
+        const commodityId = e.currentTarget.dataset.id
+        let cart = wx.getStorageSync('cart') || []
+
+        const index = cart.findIndex(item => item.commodityId === commodityId && item.spec === 'large')
+
+        if (index > -1) {
+            if (cart[index].quantity > 1) {
+                cart[index].quantity -= 1
+            } else {
+                cart.splice(index, 1)
+            }
+
+            wx.setStorageSync('cart', cart)
+            this.updateCartSummary(cart)
+            wx.vibrateShort()
+        }
+    },
+    confirmAddToCart() {
+        const item = this.data.selectedGoods
+        const commodity = item.commodity
+        const spec = this.data.selectedSpec
+        const quantity = this.data.popupQuantity
+
+        const specPrice = spec === 'small' ? this.data.smallPrice : this.data.largePrice
+        const specName = spec === 'small' ? '小份' : '大份'
+        const weight = spec === 'small' ? '50g' : '100g'
+
+        let cart = wx.getStorageSync('cart') || []
+
+        const existingIndex = cart.findIndex(c => c.commodityId === commodity.id && c.spec === spec)
+
+        if (existingIndex > -1) {
+            cart[existingIndex].quantity += quantity
+        } else {
+            cart.push({
+                commodityId: commodity.id,
+                code: commodity.code,
+                name: commodity.name,
+                price: commodity.price,
+                unitPrice: specPrice,
+                image: commodity.images,
+                model: commodity.model,
+                quantity: quantity,
+                typeName: item.typeName,
+                spec: spec,
+                specName: specName,
+                weight: weight
+            })
+        }
+
+        wx.setStorageSync('cart', cart)
+        this.updateCartSummary(cart)
+
+        this.hideGoodsDetail()
+
+        wx.showToast({
+            title: `已加入${quantity}份`,
+            icon: 'success',
+            duration: 1500
+        })
+    },
+    showCartDetail() {
+        this.setData({
+            showCartPopup: true
+        })
+    },
+    hideCartDetail() {
+        this.setData({
+            showCartPopup: false
+        })
+    },
+    increaseCartItem(e) {
+        const index = e.currentTarget.dataset.index
+        let cart = this.data.cartList
+
+        cart[index].quantity += 1
+
+        wx.setStorageSync('cart', cart)
+        this.updateCartSummary(cart)
+        wx.vibrateShort()
+    },
+    decreaseCartItem(e) {
+        const index = e.currentTarget.dataset.index
+        let cart = this.data.cartList
+
+        if (cart[index].quantity > 1) {
+            cart[index].quantity -= 1
+            wx.setStorageSync('cart', cart)
+            this.updateCartSummary(cart)
+            wx.vibrateShort()
+        }
+    },
+    deleteCartItem(e) {
+        const index = e.currentTarget.dataset.index
+        let cart = this.data.cartList
+
+        wx.showModal({
+            title: '提示',
+            content: '确定要删除这个商品吗？',
+            success: (res) => {
+                if (res.confirm) {
+                    cart.splice(index, 1)
+                    wx.setStorageSync('cart', cart)
+                    this.updateCartSummary(cart)
+                    wx.showToast({
+                        title: '已删除',
+                        icon: 'success',
+                        duration: 1500
+                    })
+                }
+            }
+        })
+    },
+    clearCart() {
+        wx.showModal({
+            title: '提示',
+            content: '确定要清空购物车吗？',
+            success: (res) => {
+                if (res.confirm) {
+                    wx.setStorageSync('cart', [])
+                    this.updateCartSummary([])
+                    wx.showToast({
+                        title: '已清空',
+                        icon: 'success',
+                        duration: 1500
+                    })
+                }
+            }
+        })
+    },
+    goToCart() {
+        wx.navigateTo({
+            url: '/pages/scar/order/index'
+        })
+    },
+    goToSettlement() {
+        const cart = wx.getStorageSync('cart') || []
+
+        if (cart.length === 0) {
             wx.showToast({
-                title: '请选择订单',
+                title: '购物车是空的',
                 icon: 'none',
                 duration: 2000
             })
-        } else {
-            http.get('selDefaultAddress', { userId: this.data.userInfo.id }).then((r) => {
-                if (r.data == null) {
-                    wx.showToast({
-                        title: '请先设置默认收货地址',
-                        icon: 'none',
-                        duration: 1000
-                    })
-                } else {
-                    let orderIds = []
-                    this.data.orderList.forEach(item => {
-                        if (item.checked) {
-                            orderIds.push(item.orderId)
-                        }
-                    });
-                    wx.navigateTo({
-                        url: '/pages/scar/order/index?type=1&orderIds=' + orderIds.join(',') + ''
-                    })
-                }
-            })
+            return
         }
+
+        wx.navigateTo({
+            url: '/pages/scar/order/index?type=checkout'
+        })
     }
 });

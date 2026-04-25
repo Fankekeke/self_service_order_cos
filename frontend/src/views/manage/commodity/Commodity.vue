@@ -21,14 +21,6 @@
                 <a-input v-model="queryParams.name"/>
               </a-form-item>
             </a-col>
-            <a-col :md="6" :sm="24">
-              <a-form-item
-                label="餐品原料"
-                :labelCol="{span: 5}"
-                :wrapperCol="{span: 18, offset: 1}">
-                <a-input v-model="queryParams.model"/>
-              </a-form-item>
-            </a-col>
           </div>
           <span style="float: right; margin-top: 3px;">
             <a-button type="primary" @click="search">查询</a-button>
@@ -230,8 +222,36 @@ export default {
         dataIndex: 'model',
         ellipsis: true,
         customRender: (text, row, index) => {
+          if (row.materials && row.materials.length > 0) {
+            return row.materials.map(m => {
+              const quantity = m.quantity !== null && m.quantity !== undefined ? m.quantity : 0
+              const unit = m.relationUnit || m.unit || ''
+              return `${m.materialName}(${quantity}${unit})`
+            }).join('、')
+          } else {
+            return '- -'
+          }
+        }
+      }, {
+        title: '餐品类型',
+        dataIndex: 'typeName',
+        ellipsis: true,
+        customRender: (text, row, index) => {
           if (text !== null) {
             return text
+          } else {
+            return '- -'
+          }
+        }
+      }, {
+        title: '状态',
+        dataIndex: 'onPut',
+        ellipsis: true,
+        customRender: (text, row, index) => {
+          if (text === '1') {
+            return <a-tag color="green">上架</a-tag>
+          } else if (text === '0') {
+            return <a-tag color="red">下架</a-tag>
           } else {
             return '- -'
           }
@@ -308,8 +328,22 @@ export default {
       this.materialRelationModal.visible = true
       this.materialRelationModal.relationList = []
 
-      // 如果已有关系数据，加载它
-      if (record.relationListStr) {
+      if (record.materials && record.materials.length > 0) {
+        this.materialRelationModal.relationList = record.materials.map(material => ({
+          commodityId: record.id,
+          materialId: material.materialId,
+          materialName: material.materialName,
+          materialCode: material.materialCode,
+          category: material.category,
+          unit: material.unit,
+          specification: material.specification,
+          supplier: material.supplier,
+          unitPrice: material.unitPrice,
+          quantity: material.quantity,
+          relationUnit: material.relationUnit,
+          remark: material.remark
+        }))
+      } else if (record.relationListStr) {
         try {
           this.materialRelationModal.relationList = JSON.parse(record.relationListStr)
         } catch (e) {
@@ -318,7 +352,6 @@ export default {
         }
       }
 
-      // 如果没有数据，默认添加一行
       if (this.materialRelationModal.relationList.length === 0) {
         this.addMaterialRow()
       }
@@ -367,7 +400,7 @@ export default {
       // 将关系列表转换为JSON字符串
       const relationListStr = JSON.stringify(this.materialRelationModal.relationList)
 
-      this.$put('/cos/commodity-info', {
+      this.$put('/cos/commodity-material-relation', {
         id: this.materialRelationModal.commodityId,
         relationListStr: relationListStr
       }).then((r) => {

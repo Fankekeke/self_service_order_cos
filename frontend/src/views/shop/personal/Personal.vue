@@ -1,6 +1,6 @@
 <template>
   <a-row :gutter="8" style="width: 100%">
-    <a-col :span="6">
+    <a-col :span="7">
       <div style="background:#ECECEC; padding:30px;margin-top: 30px">
         <a-card :bordered="false">
           <b style="font-size: 15px;font-family: SimHei">店铺信息
@@ -31,6 +31,33 @@
                   'tag',
                   { rules: [{ required: true, message: '请输入标签!' }] }
                   ]"/>
+                </a-form-item>
+              </a-col>
+              <a-col :span="24">
+                <a-form-item label='营业星期' v-bind="formItemLayout">
+                  <div :style="{ borderBottom: '1px solid #E9E9E9' }">
+                    <a-checkbox :indeterminate="indeterminate" :checked="checkAll" @change="onCheckAllChange">
+                      Check all
+                    </a-checkbox>
+                  </div>
+                  <br />
+                  <a-checkbox-group v-model="checkedList" :options="plainOptions" @change="onChange" />
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <a-form-item label='开始营业时间' v-bind="formItemLayout">
+                  <a-time-picker :default-open-value="moment('00:00:00', 'HH:mm:ss')" style="width: 100%" v-decorator="[
+                  'operateStartTime',
+                  { rules: [{ required: true, message: '请输入开始营业时间!' }] }
+                  ]" />
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <a-form-item label='营业结束时间' v-bind="formItemLayout">
+                  <a-time-picker style="width: 100%" v-decorator="[
+                  'operateEndTime',
+                  { rules: [{ required: true, message: '请输入营业结束时间!' }] }
+                  ]" />
                 </a-form-item>
               </a-col>
               <a-col :span="24">
@@ -74,7 +101,7 @@
         </a-card>
       </div>
     </a-col>
-    <a-col :span="18">
+    <a-col :span="17">
       <div style="background:#ECECEC; padding:30px;margin-top: 30px">
         <a-card :bordered="false">
           <a-spin :spinning="dataLoading">
@@ -103,6 +130,7 @@ import {mapState} from 'vuex'
 import moment from 'moment'
 import AuditAdd from './AuditAdd.vue'
 moment.locale('zh-cn')
+const plainOptions = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 const formItemLayout = {
   labelCol: { span: 24 },
   wrapperCol: { span: 24 }
@@ -125,10 +153,14 @@ export default {
   components: {AuditAdd},
   data () {
     return {
+      checkedList: [],
+      indeterminate: true,
+      checkAll: false,
       commodityAdd: {
         visiable: false
       },
       rowId: null,
+      plainOptions,
       formItemLayout,
       form: this.$form.createForm(this),
       loading: false,
@@ -146,6 +178,18 @@ export default {
   },
   methods: {
     moment,
+    onChange (checkedList) {
+      this.indeterminate = !!checkedList.length && checkedList.length < plainOptions.length
+      this.checkAll = checkedList.length === plainOptions.length
+      console.log(this.checkedList)
+    },
+    onCheckAllChange (e) {
+      Object.assign(this, {
+        checkedList: e.target.checked ? plainOptions : [],
+        indeterminate: false,
+        checkAll: e.target.checked
+      })
+    },
     add () {
       this.commodityAdd.visiable = true
     },
@@ -200,12 +244,48 @@ export default {
     },
     setFormValues ({...user}) {
       this.rowId = user.id
-      let fields = ['introduction', 'code', 'introduction', 'tag', 'name', 'images']
+      let fields = ['introduction', 'code', 'introduction', 'tag', 'name', 'images', 'operateDay', 'operateEndTime', 'operateStartTime']
       let obj = {}
       Object.keys(user).forEach((key) => {
         if (key === 'images' && user[key] !== null) {
           this.fileList = []
           this.imagesInit(user['images'])
+        }
+        if (key === 'operateDay' && user[key] != null) {
+          let operateDay = user[key].split(',')
+          let checkList = []
+          operateDay.forEach(e => {
+            switch (e) {
+              case '1':
+                checkList.push('周一')
+                break
+              case '2':
+                checkList.push('周二')
+                break
+              case '3':
+                checkList.push('周三')
+                break
+              case '4':
+                checkList.push('周四')
+                break
+              case '5':
+                checkList.push('周五')
+                break
+              case '6':
+                checkList.push('周六')
+                break
+              case '7':
+                checkList.push('周日')
+                break
+            }
+          })
+          this.checkedList = checkList
+        }
+        if (key === 'operateStartTime' && user[key] != null) {
+          user[key] = moment(user[key], 'HH:mm:ss')
+        }
+        if (key === 'operateEndTime' && user[key] != null) {
+          user[key] = moment(user[key], 'HH:mm:ss')
         }
         if (fields.indexOf(key) !== -1) {
           this.form.getFieldDecorator(key)
@@ -224,6 +304,10 @@ export default {
       }
     },
     handleSubmit () {
+      if (this.checkedList.length === 0) {
+        this.$message.warn('至少选择一天')
+        return false
+      }
       // 获取图片List
       let images = []
       this.fileList.forEach(image => {
@@ -238,6 +322,9 @@ export default {
         values.images = images.length > 0 ? images.join(',') : null
         if (!err) {
           this.loading = true
+          values.operateDay = this.checkedList.join(',')
+          values.operateStartTime = moment(values.operateStartTime).format('HH:mm:ss')
+          values.operateEndTime = moment(values.operateEndTime).format('HH:mm:ss')
           this.$put('/cos/shop-info', {
             ...values
           }).then((r) => {

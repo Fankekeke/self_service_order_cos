@@ -1,3 +1,4 @@
+
 <view class='UCenter-bg' style="background-image: linear-gradient(45deg, #1a68ceef, #113769ef);height: 400rpx;">
     <block wx:if="{{!hasUserInfo}}">
         <!-- canIUseGetUserProfile判断当前版本是否支持wx.getUserProfile方法 -->
@@ -8,11 +9,9 @@
     <block wx:else>
         <view class="cu-avatar round lg" style="background-image:url({{userInfo.avatar}});"></view>
         <view class='text-xl' style="margin-top: 15px;font-size: 15px">{{userInfo.userName}}</view>
-        <!-- <view class='margin-top-sm'>
-            <text style="font-size: 13px" wx:if="{{userInfo.type == 1}}">普通会员</text>
-        </view> -->
     </block>
 </view>
+
 <view class="cu-list menu card-menu margin-top-xl margin-bottom-xl shadow-lg">
     <view class="cu-item arrow">
         <navigator class='content' open-type="navigate" hover-class='none' url="/pages/order/index/index">
@@ -20,28 +19,115 @@
             <text class='text-grey'>我的订单</text>
         </navigator>
     </view>
-    <!-- <view class="cu-item arrow">
-        <navigator class='content' open-type="navigate" hover-class='none' url="/pages/vipcard/index/index">
-            <text class='icon-vipcard text-green'></text>
-            <text class='text-grey'>会员卡</text>
-        </navigator>
-    </view> -->
     <view class="cu-item arrow">
         <navigator class='content' open-type="navigate" hover-class='none' url="/pages/coupon/index/index">
             <text class='icon-ticket text-red'></text>
             <text class='text-grey'>社区论坛</text>
         </navigator>
     </view>
-    <view class="cu-item arrow">
-        <navigator class='content' open-type="navigate" hover-class='none' url="/pages/user/address/index">
-            <text class='icon-location text-orange'></text>
-            <text class='text-grey'>地址管理</text>
-        </navigator>
+</view>
+
+        <!-- 饮食分析模块 -->
+<view class="diet-analysis-section" wx:if="{{ weeklySummary }}">
+    <view class="section-header">
+        <text class="icon-health"></text>
+        <text class="section-title">本周饮食分析</text>
+        <text class="section-date">{{ weeklySummary.startDate }} - {{ weeklySummary.endDate }}</text>
     </view>
-    <!-- <view class="cu-item arrow" wx:if="{{userInfo.type == 2}}">
-        <navigator class='content' open-type="navigate" hover-class='none' url="/pages/user/goods/index">
-            <text class='icon-vipcard text-green'></text>
-            <text class='text-grey'>我的餐品</text>
-        </navigator>
-    </view> -->
+
+    <!-- 周营养总览卡片 -->
+    <view class="summary-card bg-white">
+        <view class="summary-grid">
+            <view class="summary-item">
+                <view class="summary-value text-orange">{{ weeklySummary.totalCalories }}</view>
+                <view class="summary-label">总热量(kcal)</view>
+                <view class="summary-avg">日均 {{ weeklySummary.avgCalories }}</view>
+            </view>
+            <view class="summary-item">
+                <view class="summary-value text-blue">{{ weeklySummary.totalProtein }}g</view>
+                <view class="summary-label">蛋白质</view>
+                <view class="summary-avg">日均 {{ weeklySummary.avgProtein }}g</view>
+            </view>
+            <view class="summary-item">
+                <view class="summary-value text-green">{{ weeklySummary.totalFat }}g</view>
+                <view class="summary-label">脂肪</view>
+                <view class="summary-avg">日均 {{ weeklySummary.avgFat }}g</view>
+            </view>
+            <view class="summary-item">
+                <view class="summary-value text-purple">{{ weeklySummary.totalCarbohydrate }}g</view>
+                <view class="summary-label">碳水</view>
+                <view class="summary-avg">日均 {{ weeklySummary.avgCarbohydrate }}g</view>
+            </view>
+        </view>
+    </view>
+
+    <!-- 周趋势图表 -->
+    <view class="chart-card bg-white">
+        <view class="card-title">
+            <text class="icon-rank"></text>
+            <text>本周热量趋势</text>
+        </view>
+        <view class="chart-wrapper">
+            <canvas canvas-id="weeklyChart" id="weeklyChart" class="weekly-chart" style="width: 100%; height: 400rpx;"></canvas>
+        </view>
+    </view>
+
+    <!-- 每日详情列表 -->
+    <view class="daily-card bg-white">
+        <view class="card-title">
+            <text class="icon-time"></text>
+            <text>每日详情</text>
+        </view>
+
+        <view class="daily-list">
+            <view class="daily-item" wx:for="{{ dailyNutritionList }}" wx:key="date">
+                <view class="daily-header">
+                    <view class="daily-date">
+                        <text class="date-text">{{ item.date }}</text>
+                        <text class="date-week">{{ getWeekDay(item.date) }}</text>
+                    </view>
+                    <view class="daily-stats">
+                        <text class="order-count" wx:if="{{ item.orderCount > 0 }}">{{ item.orderCount }}单</text>
+                        <text class="calories">{{ item.totalCalories }} kcal</text>
+                    </view>
+                </view>
+
+                <view class="daily-nutrition" wx:if="{{ item.orderCount > 0 }}">
+                    <view class="nutrition-bar">
+                        <view class="bar-item protein" style="width: {{ getPercentage(item.totalProtein, 80) }}%">
+                            <text class="bar-label">P {{ item.totalProtein }}g</text>
+                        </view>
+                        <view class="bar-item fat" style="width: {{ getPercentage(item.totalFat, 70) }}%">
+                            <text class="bar-label">F {{ item.totalFat }}g</text>
+                        </view>
+                        <view class="bar-item carb" style="width: {{ getPercentage(item.totalCarbohydrate, 300) }}%">
+                            <text class="bar-label">C {{ item.totalCarbohydrate }}g</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view class="daily-empty" wx:else>
+                    <text class="empty-icon">😴</text>
+                    <text class="empty-text">暂无饮食记录</text>
+                </view>
+            </view>
+        </view>
+    </view>
+
+    <!-- 健康建议 -->
+    <view class="health-card bg-white" wx:if="{{ healthAnalysis }}">
+        <view class="card-title recommend-title">
+            <text class="icon-like"></text>
+            <text>健康建议</text>
+        </view>
+
+        <view class="recommend-list">
+            <view class="recommend-item" wx:for="{{ healthAnalysis.recommendations }}" wx:key="index">
+                <view class="recommend-icon">
+                    <text class="icon-check"></text>
+                </view>
+                <view class="recommend-text">{{ item }}</view>
+            </view>
+        </view>
+    </view>
 </view>

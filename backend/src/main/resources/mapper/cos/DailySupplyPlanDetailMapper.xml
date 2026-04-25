@@ -2,4 +2,38 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cc.mrbird.febs.cos.dao.DailySupplyPlanDetailMapper">
 
+    <select id="queryPage" resultType="java.util.LinkedHashMap">
+        SELECT
+        dspd.id,
+        dspd.commodity_id,
+        dspd.planned_quantity,
+        dspd.actual_quantity,
+        dspd.unit_price,
+        dspd.planned_amount,
+        dspd.actual_amount,
+        dspd.estimated_material_cost,
+        dspd.actual_material_cost,
+        dspd.sold_quantity,
+        dspd.remaining_quantity,
+        dspd.remark,
+        dspd.create_date,
+        dspd.update_date,
+        dspd.DATE,
+
+        ci.`name`,
+        ci.images
+        FROM
+        daily_supply_plan_detail dspd
+        LEFT JOIN commodity_info ci ON (ci.id = dspd.commodity_id)
+        WHERE
+        1 = 1
+        <if test="queryForm.name != null and queryForm.name != ''">
+            AND ci.name LIKE CONCAT('%',#{queryForm.name},'%')
+        </if>
+        <if test="queryForm.date != null and queryForm.date != ''">
+            AND dspd.DATE = #{queryForm.date}
+        </if>
+        ORDER BY
+        dspd.DATE DESC
+    </select>
 </mapper>

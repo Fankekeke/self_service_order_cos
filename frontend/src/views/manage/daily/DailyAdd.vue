@@ -200,7 +200,7 @@ export default {
           // 将菜品计划列表转换为JSON字符串
           values.dailyPlanStr = JSON.stringify(this.dailyPlanList)
 
-          this.$post('/cos/daily-plan-info', {
+          this.$post('/cos/daily-supply-plan-detail', {
             ...values
           }).then((r) => {
             this.reset()
